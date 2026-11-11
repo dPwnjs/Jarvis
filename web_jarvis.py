@@ -32,6 +32,8 @@ from jarvis.config import (
     JARVIS_SYSTEM_INSTRUCTION,
     INPUT_SAMPLE_RATE,
 )
+from jarvis.tools import JARVIS_TOOLS, execute_tool
+
 
 HTTP_PORT = int(os.getenv("PORT", "8000"))
 WS_PORT = int(os.getenv("WS_PORT", "8001"))
@@ -256,7 +258,9 @@ def start_http_server(host: str, port: int) -> http.server.ThreadingHTTPServer:
     return server
 
 
-async def handle_gemini_to_browser(session, websocket, disconnect_event: asyncio.Event):
+async def handle_gemini_to_browser(
+    session, websocket, types, disconnect_event: asyncio.Event
+):
     """
     Continuously receives responses from Gemini Live API and streams them
     to the browser WebSocket (audio PCM chunks as binary, text/status as JSON).
@@ -272,6 +276,50 @@ async def handle_gemini_to_browser(session, websocket, disconnect_event: asyncio
                     break
 
                 turn_items += 1
+
+                # Check for Gemini Tool/Function Calls
+                if getattr(response, "tool_call", None) and response.tool_call.function_calls:
+                    function_responses = []
+                    for call in response.tool_call.function_calls:
+                        call_name = call.name
+                        call_args = dict(call.args) if call.args else {}
+                        call_id = call.id
+                        print(f"⚡ [Gemini Tool Call]: {call_name} (args: {call_args}, id: {call_id})")
+
+                        # 1. Notify browser UI
+                        try:
+                            await websocket.send(
+                                json.dumps(
+                                    {
+                                        "type": "tool_call",
+                                        "tool_name": call_name,
+                                        "args": call_args,
+                                    }
+                                )
+                            )
+                        except Exception:
+                            pass
+
+                        # 2. Execute tool locally
+                        tool_result = execute_tool(call_name, call_args)
+                        print(f"⚡ [Tool Result]: {tool_result}")
+
+                        function_responses.append(
+                            types.FunctionResponse(
+                                name=call_name,
+                                response=tool_result,
+                                id=call_id,
+                            )
+                        )
+
+                    # 3. Send tool response back to Gemini session
+                    try:
+                        await session.send_tool_response(
+                            function_responses=function_responses
+                        )
+                    except Exception as e:
+                        print(f"[Tool Response Error]: {e}")
+
                 server_content = response.server_content
                 if server_content is None:
                     continue
@@ -479,6 +527,7 @@ async def websocket_handler(websocket):
         ),
         input_audio_transcription=types.AudioTranscriptionConfig(),
         output_audio_transcription=types.AudioTranscriptionConfig(),
+        tools=JARVIS_TOOLS,
         system_instruction=types.Content(
             parts=[types.Part.from_text(text=JARVIS_SYSTEM_INSTRUCTION)]
         ),
@@ -505,7 +554,7 @@ async def websocket_handler(websocket):
 
             # Run bidirectional streaming tasks
             gemini_task = asyncio.create_task(
-                handle_gemini_to_browser(session, websocket, disconnect_event)
+                handle_gemini_to_browser(session, websocket, types, disconnect_event)
             )
             browser_task = asyncio.create_task(
                 handle_browser_to_gemini(websocket, session, types, disconnect_event)

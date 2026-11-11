@@ -1,0 +1,25 @@
+{
+  "active_tools": [
+    {
+      "name": "get_current_datetime",
+      "description": "실시간 대한민국(KST) 날짜, 시간, 요일 조회",
+      "status": "active"
+    },
+    {
+      "name": "calculate_math",
+      "description": "수학 수식 및 정확한 사칙/공학 계산",
+      "status": "active"
+    },
+    {
+      "name": "request_and_register_capability",
+      "description": "사용자(Sir)에게 허락/승인받은 신규 기능을 시스템에 정식 등록",
+      "status": "active"
+    },
+    {
+      "name": "get_system_capabilities",
+      "description": "현재 자비스의 활성화된 기능 및 승인된 확장 기능 목록 조회",
+      "status": "active"
+    }
+  ],
+  "approved_backlog": []
+}

@@ -1614,6 +1614,36 @@
           finalizeJarvisResponse();
           break;
 
+        case "tool_call": {
+          const toolNamesKo = {
+            "get_current_datetime": "실시간 대한민국 표준시(KST) 확인",
+            "calculate_math": "수학 공식 및 수치 정밀 연산",
+            "request_and_register_capability": "새로운 기능 탑재 승인 및 영구 등록",
+            "get_system_capabilities": "자비스 활성 기능 및 승인 목록 조회"
+          };
+          const title = toolNamesKo[msg.tool_name] || msg.tool_name;
+          let argsHtml = "";
+          if (msg.args && Object.keys(msg.args).length > 0) {
+            const prettyArgs = Object.entries(msg.args)
+              .map(([k, v]) => `<span style="color:#00f0ff;">${k}</span>: "${v}"`)
+              .join(", ");
+            argsHtml = `<div style="margin-top:4px;font-family:monospace;font-size:11px;color:rgba(255,255,255,0.7);background:rgba(0,0,0,0.3);padding:4px 8px;border-radius:4px;">${prettyArgs}</div>`;
+          }
+          const isApproval = msg.tool_name === "request_and_register_capability";
+          const icon = isApproval ? "🛡️" : "⚡";
+          const borderStyle = isApproval ? "border-color: #ffb700; background: rgba(255, 183, 0, 0.08);" : "";
+          const badgeClass = isApproval ? "style='color:#ffb700;font-weight:600;'" : "style='color:#00f0ff;font-weight:600;'";
+
+          appendMessage(
+            "system",
+            `<div style="${borderStyle}padding:4px 2px;">
+              <span ${badgeClass}>${icon} [STARK PROTOCOL // ${title}]</span>
+              ${argsHtml}
+            </div>`
+          );
+          break;
+        }
+
         case "error":
           appendMessage("system", `❌ [오류]: ${msg.message}`);
           break;

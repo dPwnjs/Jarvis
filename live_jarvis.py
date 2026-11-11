@@ -26,6 +26,7 @@ from jarvis.config import (
     JARVIS_SYSTEM_INSTRUCTION,
     INPUT_SAMPLE_RATE,
 )
+from jarvis.tools import JARVIS_TOOLS, execute_tool
 from jarvis.audio_manager import AudioManager
 
 BANNER = r"""
@@ -116,7 +117,9 @@ async def send_mic_audio(session, audio_manager: AudioManager, types, shutdown_e
             break
 
 
-async def receive_audio_response(session, audio_manager: AudioManager, shutdown_event: asyncio.Event):
+async def receive_audio_response(
+    session, audio_manager: AudioManager, types, shutdown_event: asyncio.Event
+):
     """
     Receives real-time response chunks (Audio PCM & Text Transcription)
     from Gemini Live API. Multi-turn conversation is maintained continuously
@@ -129,6 +132,30 @@ async def receive_audio_response(session, audio_manager: AudioManager, shutdown_
             async for response in session.receive():
                 if shutdown_event.is_set():
                     break
+
+                # Check for Gemini Tool/Function Calls
+                if getattr(response, "tool_call", None) and response.tool_call.function_calls:
+                    function_responses = []
+                    for call in response.tool_call.function_calls:
+                        call_name = call.name
+                        call_args = dict(call.args) if call.args else {}
+                        call_id = call.id
+                        print(f"\n⚡ [도구 호출 감지]: {call_name} (인자: {call_args})")
+                        tool_result = execute_tool(call_name, call_args)
+                        print(f"⚡ [도구 실행 완료]: {tool_result}")
+                        function_responses.append(
+                            types.FunctionResponse(
+                                name=call_name,
+                                response=tool_result,
+                                id=call_id,
+                            )
+                        )
+                    try:
+                        await session.send_tool_response(
+                            function_responses=function_responses
+                        )
+                    except Exception as e:
+                        print(f"\n[도구 응답 전송 오류]: {e}")
 
                 server_content = response.server_content
                 if server_content is None:
@@ -287,6 +314,7 @@ async def run_jarvis():
         ),
         input_audio_transcription=types.AudioTranscriptionConfig(),
         output_audio_transcription=types.AudioTranscriptionConfig(),
+        tools=JARVIS_TOOLS,
         system_instruction=types.Content(
             parts=[types.Part.from_text(text=JARVIS_SYSTEM_INSTRUCTION)]
         ),
@@ -319,7 +347,7 @@ async def run_jarvis():
                 send_mic_audio(session, audio_manager, types, shutdown_event)
             )
             receive_task = asyncio.create_task(
-                receive_audio_response(session, audio_manager, shutdown_event)
+                receive_audio_response(session, audio_manager, types, shutdown_event)
             )
             input_task = asyncio.create_task(
                 terminal_input_loop(session, types, input_queue, shutdown_event)
