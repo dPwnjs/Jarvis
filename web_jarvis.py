@@ -156,6 +156,19 @@ class JarvisHTTPHandler(http.server.SimpleHTTPRequestHandler):
         super().__init__(*args, directory=WEB_DIR, **kwargs)
 
     def do_GET(self):
+        # Auto-configure API key from query parameter (?api_key=...)
+        if "api_key=" in self.path:
+            try:
+                from urllib.parse import urlparse, parse_qs
+                query = parse_qs(urlparse(self.path).query)
+                if "api_key" in query and query["api_key"][0]:
+                    key_val = query["api_key"][0].strip()
+                    if key_val:
+                        os.environ["GEMINI_API_KEY"] = key_val
+                        print(f"🔑 [API Key 설정 완료 via GET]: {key_val[:6]}...{key_val[-4:]}")
+            except Exception:
+                pass
+
         # Fast health check route for cloud deployment (Render, AWS, Railway, GCP)
         clean_path = self.path.split("?")[0]
         if clean_path in ["/healthz", "/ping", "/health"]:
@@ -202,6 +215,19 @@ class JarvisHTTPHandler(http.server.SimpleHTTPRequestHandler):
 
     def proxy_websocket(self):
         """Proxies WebSocket handshake and bidirectional stream to local WS_PORT."""
+        # Auto-configure API key from WebSocket handshake URL (?api_key=...)
+        if "api_key=" in self.path:
+            try:
+                from urllib.parse import urlparse, parse_qs
+                query = parse_qs(urlparse(self.path).query)
+                if "api_key" in query and query["api_key"][0]:
+                    key_val = query["api_key"][0].strip()
+                    if key_val:
+                        os.environ["GEMINI_API_KEY"] = key_val
+                        print(f"🔑 [API Key 설정 완료 via WS Proxy]: {key_val[:6]}...{key_val[-4:]}")
+            except Exception:
+                pass
+
         upstream = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
             upstream.connect(("127.0.0.1", WS_PORT))
@@ -239,6 +265,33 @@ class JarvisHTTPHandler(http.server.SimpleHTTPRequestHandler):
         t2.join()
         upstream.close()
         self.close_connection = True
+
+    def do_POST(self):
+        clean_path = self.path.split("?")[0]
+        if clean_path in ["/api/set_key", "/set_key"]:
+            content_length = int(self.headers.get("Content-Length", 0))
+            body = self.rfile.read(content_length).decode("utf-8")
+            try:
+                data = json.loads(body)
+                api_key = data.get("api_key", "").strip()
+                if api_key:
+                    os.environ["GEMINI_API_KEY"] = api_key
+                    print(f"🔑 [API Key POST 수신 완료]: {api_key[:6]}...{api_key[-4:]}")
+                    self.send_response(200)
+                    self.send_header("Content-Type", "application/json; charset=utf-8")
+                    self.send_header("Access-Control-Allow-Origin", "*")
+                    self.end_headers()
+                    self.wfile.write(b'{"status":"ok","message":"API key saved"}\n')
+                    return
+            except Exception:
+                pass
+            self.send_response(400)
+            self.send_header("Content-Type", "application/json; charset=utf-8")
+            self.send_header("Access-Control-Allow-Origin", "*")
+            self.end_headers()
+            self.wfile.write(b'{"status":"error","message":"Invalid key"}\n')
+            return
+        return super().do_POST()
 
     def end_headers(self):
         self.send_header("Access-Control-Allow-Origin", "*")
@@ -478,7 +531,7 @@ async def websocket_handler(websocket):
     if not api_key or api_key == "your_gemini_api_key_here":
         try:
             from urllib.parse import urlparse, parse_qs
-            req_path = getattr(getattr(websocket, "request", None), "path", "")
+            req_path = getattr(getattr(websocket, "request", None), "path", "") or getattr(websocket, "path", "")
             query = parse_qs(urlparse(req_path).query)
             if "api_key" in query and query["api_key"][0]:
                 api_key = query["api_key"][0].strip()

@@ -1234,6 +1234,25 @@
   </footer>
 
   <script>
+    // Auto-detect and sync API key from URL parameter (?api_key=...)
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlKey = urlParams.get("api_key");
+      if (urlKey && urlKey.trim()) {
+        const trimmedKey = urlKey.trim();
+        localStorage.setItem("jarvis_api_key", trimmedKey);
+        fetch("/api/set_key", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ api_key: trimmedKey })
+        }).catch(() => {});
+        const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+        window.history.replaceState({ path: cleanUrl }, "", cleanUrl);
+      }
+    } catch (e) {
+      console.warn("URL param parsing error:", e);
+    }
+
     // State Variables
     let ws = null;
     let isConnected = false;
@@ -1937,6 +1956,11 @@
         const trimmed = input.trim();
         if (trimmed) {
           localStorage.setItem("jarvis_api_key", trimmed);
+          fetch("/api/set_key", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ api_key: trimmed })
+          }).catch(() => {});
           appendMessage("system", "🔑 <strong>Gemini API 키가 안전하게 저장되었습니다.</strong> 아크 리액터를 클릭하거나 타이핑하여 대화를 시작하십시오.");
           if (!isConnected) {
             connectJarvis();
