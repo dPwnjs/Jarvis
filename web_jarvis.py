@@ -473,12 +473,25 @@ async def websocket_handler(websocket):
     print(f"\n🌐 [웹 클라이언트 접속]: {websocket.remote_address}")
 
     api_key = os.getenv("GEMINI_API_KEY", GEMINI_API_KEY)
+
+    # Check if client provided api_key via query parameter (?api_key=...)
+    if not api_key or api_key == "your_gemini_api_key_here":
+        try:
+            from urllib.parse import urlparse, parse_qs
+            req_path = getattr(getattr(websocket, "request", None), "path", "")
+            query = parse_qs(urlparse(req_path).query)
+            if "api_key" in query and query["api_key"][0]:
+                api_key = query["api_key"][0].strip()
+        except Exception:
+            pass
+
     if not api_key or api_key == "your_gemini_api_key_here":
         await websocket.send(
             json.dumps(
                 {
                     "type": "error",
-                    "message": "GEMINI_API_KEY가 설정되지 않았습니다. .env 파일을 확인해 주세요.",
+                    "code": "AUTH_KEY_MISSING",
+                    "message": "GEMINI_API_KEY가 설정되지 않았습니다. 상단 [🔑 API 키] 버튼을 눌러 등록하시거나 Render 대시보드의 Environment에 등록해 주세요.",
                 }
             )
         )

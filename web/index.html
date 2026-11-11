@@ -1095,6 +1095,9 @@
         <span>VOICE:</span>
         <span id="voiceLabel" style="color: var(--gold-accent);">PUCK</span>
       </div>
+      <button class="metric-badge btn-mobile-sync" id="apiKeyBtn" title="Gemini API 키 설정">
+        <span>🔑 API 키</span>
+      </button>
       <button class="metric-badge btn-mobile-sync" id="mobileModalBtn" title="스마트폰 연결 및 QR 코드">
         <span>📱 모바일 연동</span>
       </button>
@@ -1252,6 +1255,7 @@
     let isJarvisSpeaking = false;
 
     // DOM Elements
+    const apiKeyBtn = document.getElementById("apiKeyBtn");
     const reactorBtn = document.getElementById("reactorBtn");
     const arcReactor = document.getElementById("arcReactor");
     const reactorCore = document.getElementById("reactorCore");
@@ -1504,6 +1508,12 @@
         wsUrl = `${protocol}//${location.hostname}:${wsPort}/ws`;
       }
 
+      // Append user-configured Gemini API Key if available in browser localStorage
+      const storedApiKey = localStorage.getItem("jarvis_api_key");
+      if (storedApiKey) {
+        wsUrl += (wsUrl.includes("?") ? "&" : "?") + `api_key=${encodeURIComponent(storedApiKey)}`;
+      }
+
       try {
         ws = new WebSocket(wsUrl);
       } catch (err) {
@@ -1646,6 +1656,9 @@
 
         case "error":
           appendMessage("system", `❌ [오류]: ${msg.message}`);
+          if (msg.code === "AUTH_KEY_MISSING" || (msg.message && msg.message.includes("GEMINI_API_KEY"))) {
+            setTimeout(() => promptApiKey(), 400);
+          }
           break;
       }
     }
@@ -1905,6 +1918,33 @@
         setTimeout(() => { copyUrlBtn.textContent = "복사"; }, 2000);
       }
     });
+
+    // Gemini API Key Management
+    function promptApiKey() {
+      const currentKey = localStorage.getItem("jarvis_api_key") || "";
+      const masked = currentKey ? currentKey.substring(0, 6) + "..." + currentKey.slice(-4) : "미등록";
+      const input = prompt(
+        `🔑 Google AI Studio에서 발급받은 Gemini API 키를 입력해 주세요.\n(현재 브라우저 등록 상태: ${masked})\n\n입력하시면 이 브라우저에 안전하게 저장되어 클라우드(Render)에서도 즉시 작동합니다:`,
+        currentKey
+      );
+      if (input !== null) {
+        const trimmed = input.trim();
+        if (trimmed) {
+          localStorage.setItem("jarvis_api_key", trimmed);
+          appendMessage("system", "🔑 <strong>Gemini API 키가 안전하게 저장되었습니다.</strong> 아크 리액터를 클릭하거나 타이핑하여 대화를 시작하십시오.");
+          if (!isConnected) {
+            connectJarvis();
+          }
+        } else {
+          localStorage.removeItem("jarvis_api_key");
+          appendMessage("system", "ℹ️ API 키가 브라우저에서 제거되었습니다.");
+        }
+      }
+    }
+
+    if (apiKeyBtn) {
+      apiKeyBtn.addEventListener("click", promptApiKey);
+    }
 
     // Event Listeners
     function toggleJarvis(e) {
