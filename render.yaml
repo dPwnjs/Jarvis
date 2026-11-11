@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: jarvis-neural-web
+    runtime: python
+    plan: free
+    region: singapore
+    buildCommand: pip install -r requirements.txt
+    startCommand: python web_jarvis.py
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.8
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: JARVIS_VOICE
+        value: Puck
