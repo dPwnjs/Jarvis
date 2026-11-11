@@ -1658,6 +1658,12 @@
           appendMessage("system", `❌ [오류]: ${msg.message}`);
           if (msg.code === "AUTH_KEY_MISSING" || (msg.message && msg.message.includes("GEMINI_API_KEY"))) {
             setTimeout(() => promptApiKey(), 400);
+          } else if (msg.code === "QUOTA_EXCEEDED" || (msg.message && msg.message.includes("quota"))) {
+            setTimeout(() => {
+              if (confirm("⚠️ Gemini API 무료 사용량이 소진되었습니다.\n새 구글 프로젝트에서 발급받은 새 API 키를 지금 입력하시겠습니까?")) {
+                promptApiKey();
+              }
+            }, 600);
           }
           break;
       }

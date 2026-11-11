@@ -582,10 +582,19 @@ async def websocket_handler(websocket):
     except ConnectionClosed:
         pass
     except Exception as e:
-        print(f"❌ [Gemini Live 세션 오류]: {e}")
+        err_str = str(e)
+        print(f"❌ [Gemini Live 세션 오류]: {err_str}")
+        user_msg = f"연결 오류: {err_str}"
+        err_code = "CONNECTION_ERROR"
+        if "exceeded your current quota" in err_str.lower() or "1011" in err_str:
+            err_code = "QUOTA_EXCEEDED"
+            user_msg = (
+                "구글 Gemini Live API 쿼터(무료 사용량)가 초과되었습니다. "
+                "Google AI Studio에서 '새 프로젝트(New Project)'로 새 API 키를 무료 발급받아 상단 [🔑 API 키] 버튼에 입력해 주십시오."
+            )
         try:
             await websocket.send(
-                json.dumps({"type": "error", "message": f"연결 오류: {e}"})
+                json.dumps({"type": "error", "code": err_code, "message": user_msg})
             )
         except Exception:
             pass
