@@ -1,0 +1,1935 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>J.A.R.V.I.S. // Stark Industries Neural Interface</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Pretendard:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #050811;
+      --bg-card: rgba(8, 20, 36, 0.72);
+      --border-cyan: rgba(0, 240, 255, 0.35);
+      --border-cyan-glow: rgba(0, 240, 255, 0.75);
+      --cyan-bright: #00f0ff;
+      --cyan-dim: #0099b8;
+      --blue-accent: #0066ff;
+      --gold-accent: #ffb700;
+      --gold-glow: rgba(255, 183, 0, 0.6);
+      --red-alert: #ff3344;
+      --text-main: #e2f4ff;
+      --text-dim: #7da5bf;
+      --font-hud: 'Orbitron', -apple-system, sans-serif;
+      --font-chat: 'Pretendard', -apple-system, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: var(--font-chat);
+      min-height: 100vh;
+      overflow-x: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    /* Background Holographic Grid */
+    body::before {
+      content: "";
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background:
+        radial-gradient(circle at 50% 30%, rgba(0, 150, 255, 0.12) 0%, transparent 65%),
+        linear-gradient(rgba(0, 240, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 240, 255, 0.03) 1px, transparent 1px);
+      background-size: 100% 100%, 40px 40px, 40px 40px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Top HUD Header */
+    header {
+      position: relative;
+      z-index: 10;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 36px;
+      border-bottom: 1px solid var(--border-cyan);
+      background: rgba(5, 10, 20, 0.85);
+      backdrop-filter: blur(12px);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .brand-logo {
+      width: 38px;
+      height: 38px;
+      border: 2px solid var(--cyan-bright);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 0 16px var(--border-cyan-glow);
+      position: relative;
+    }
+
+    .brand-logo::after {
+      content: "";
+      width: 14px;
+      height: 14px;
+      background: var(--cyan-bright);
+      border-radius: 50%;
+      box-shadow: 0 0 10px var(--cyan-bright);
+    }
+
+    .brand-title {
+      font-family: var(--font-hud);
+      font-size: 22px;
+      font-weight: 900;
+      letter-spacing: 3px;
+      color: #fff;
+      text-shadow: 0 0 10px var(--cyan-bright);
+    }
+
+    .brand-sub {
+      font-family: var(--font-hud);
+      font-size: 10px;
+      letter-spacing: 2px;
+      color: var(--cyan-dim);
+    }
+
+    .hud-metrics {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      font-family: var(--font-hud);
+      font-size: 11px;
+      letter-spacing: 1.5px;
+    }
+
+    .metric-badge {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      border: 1px solid var(--border-cyan);
+      border-radius: 4px;
+      background: rgba(0, 240, 255, 0.05);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--cyan-bright);
+      box-shadow: 0 0 8px var(--cyan-bright);
+      animation: pulse-dot 2s infinite ease-in-out;
+    }
+
+    .status-dot.offline {
+      background: var(--red-alert);
+      box-shadow: 0 0 8px var(--red-alert);
+      animation: none;
+    }
+
+    .status-dot.speaking {
+      background: var(--gold-accent);
+      box-shadow: 0 0 12px var(--gold-accent);
+    }
+
+    @keyframes pulse-dot {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+
+    /* Main Container */
+    main {
+      position: relative;
+      z-index: 10;
+      flex: 1;
+      display: grid;
+      grid-template-columns: 460px 1fr;
+      gap: 24px;
+      padding: 24px 36px;
+      max-width: 1700px;
+      margin: 0 auto;
+      width: 100%;
+    }
+
+    @media (max-width: 1024px) {
+      main {
+        grid-template-columns: 1fr;
+        padding: 16px;
+      }
+    }
+
+    /* Left Panel: Arc Reactor Centerpiece */
+    .reactor-panel {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg-card);
+      border: 1px solid var(--border-cyan);
+      border-radius: 12px;
+      padding: 32px 24px;
+      backdrop-filter: blur(16px);
+      box-shadow: 0 0 30px rgba(0, 240, 255, 0.08);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .reactor-panel::before {
+      content: "MARK VII // NEURAL CORE";
+      position: absolute;
+      top: 16px;
+      left: 20px;
+      font-family: var(--font-hud);
+      font-size: 11px;
+      letter-spacing: 2px;
+      color: var(--cyan-dim);
+    }
+
+    .reactor-container {
+      position: relative;
+      width: 320px;
+      height: 320px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      margin: 20px 0;
+    }
+
+    /* Canvas Visualizer Overlay */
+    #visualizerCanvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 320px;
+      height: 320px;
+      border-radius: 50%;
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    /* Arc Reactor Visual Element */
+    .arc-reactor {
+      width: 250px;
+      height: 250px;
+      border-radius: 50%;
+      border: 3px solid var(--cyan-bright);
+      box-shadow:
+        0 0 25px var(--border-cyan-glow),
+        inset 0 0 30px rgba(0, 240, 255, 0.3);
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.4s ease;
+    }
+
+    .arc-reactor:hover {
+      box-shadow:
+        0 0 40px var(--cyan-bright),
+        inset 0 0 45px rgba(0, 240, 255, 0.5);
+      transform: scale(1.02);
+    }
+
+    .reactor-ring-outer {
+      position: absolute;
+      width: 280px;
+      height: 280px;
+      border-radius: 50%;
+      border: 1px dashed var(--border-cyan);
+      animation: rotate-ring 25s linear infinite;
+    }
+
+    .reactor-ring-inner {
+      position: absolute;
+      width: 200px;
+      height: 200px;
+      border-radius: 50%;
+      border: 2px solid rgba(0, 240, 255, 0.4);
+      border-top-color: var(--cyan-bright);
+      border-bottom-color: var(--cyan-bright);
+      animation: rotate-ring-rev 12s linear infinite;
+    }
+
+    @keyframes rotate-ring {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes rotate-ring-rev {
+      from { transform: rotate(360deg); }
+      to { transform: rotate(0deg); }
+    }
+
+    .reactor-core {
+      width: 130px;
+      height: 130px;
+      border-radius: 50%;
+      background: radial-gradient(circle, #ffffff 0%, #00f0ff 45%, #0044aa 85%, transparent 100%);
+      box-shadow: 0 0 35px var(--cyan-bright);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 10px;
+      z-index: 6;
+      animation: pulse-core 3s infinite ease-in-out;
+    }
+
+    .reactor-core.speaking {
+      background: radial-gradient(circle, #ffffff 0%, var(--gold-accent) 50%, #ff5500 85%, transparent 100%);
+      box-shadow: 0 0 45px var(--gold-accent);
+    }
+
+    @keyframes pulse-core {
+      0%, 100% { transform: scale(1); opacity: 0.95; }
+      50% { transform: scale(1.05); opacity: 1; }
+    }
+
+    .core-status-text {
+      font-family: var(--font-hud);
+      font-size: 11px;
+      font-weight: 800;
+      color: #050811;
+      letter-spacing: 1.5px;
+      text-shadow: 0 0 4px rgba(255, 255, 255, 0.8);
+    }
+
+    .reactor-instruction {
+      font-family: var(--font-hud);
+      font-size: 12px;
+      letter-spacing: 2px;
+      color: var(--cyan-bright);
+      margin-top: 10px;
+      text-align: center;
+    }
+
+    .reactor-subtext {
+      font-size: 13px;
+      color: var(--text-dim);
+      margin-top: 6px;
+      text-align: center;
+      line-height: 1.4;
+    }
+
+    /* Diagnostics & Quick Actions */
+    .controls-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      width: 100%;
+      margin-top: 24px;
+    }
+
+    .btn-action {
+      background: rgba(0, 240, 255, 0.08);
+      border: 1px solid var(--border-cyan);
+      border-radius: 6px;
+      color: var(--text-main);
+      font-family: var(--font-hud);
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 1.5px;
+      padding: 12px 14px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.25s ease;
+    }
+
+    .btn-action:hover {
+      background: rgba(0, 240, 255, 0.22);
+      border-color: var(--cyan-bright);
+      box-shadow: 0 0 14px var(--border-cyan-glow);
+      transform: translateY(-1px);
+    }
+
+    .btn-action.active {
+      background: rgba(0, 240, 255, 0.35);
+      border-color: var(--cyan-bright);
+      color: #fff;
+    }
+
+    .btn-action.danger {
+      border-color: rgba(255, 51, 68, 0.4);
+    }
+
+    .btn-action.danger:hover {
+      background: rgba(255, 51, 68, 0.25);
+      border-color: var(--red-alert);
+      box-shadow: 0 0 14px rgba(255, 51, 68, 0.5);
+    }
+
+    /* Right Panel: Holographic HUD Chat Log */
+    .hud-console {
+      display: flex;
+      flex-direction: column;
+      background: var(--bg-card);
+      border: 1px solid var(--border-cyan);
+      border-radius: 12px;
+      backdrop-filter: blur(16px);
+      box-shadow: 0 0 30px rgba(0, 240, 255, 0.08);
+      height: 720px;
+      position: relative;
+    }
+
+    .console-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--border-cyan);
+      font-family: var(--font-hud);
+      font-size: 11px;
+      letter-spacing: 2px;
+      color: var(--cyan-dim);
+    }
+
+    .console-header-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .console-header-title::before {
+      content: "";
+      width: 10px;
+      height: 10px;
+      background: var(--cyan-bright);
+      border-radius: 2px;
+      box-shadow: 0 0 6px var(--cyan-bright);
+    }
+
+    /* Chat Messages Stream */
+    .messages-container {
+      flex: 1;
+      padding: 24px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      scroll-behavior: smooth;
+    }
+
+    .messages-container::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .messages-container::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.2);
+    }
+
+    .messages-container::-webkit-scrollbar-thumb {
+      background: var(--border-cyan);
+      border-radius: 3px;
+    }
+
+    .msg-card {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-width: 82%;
+      animation: fadeIn 0.3s ease forwards;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .msg-card.user {
+      align-self: flex-end;
+    }
+
+    .msg-card.jarvis {
+      align-self: flex-start;
+    }
+
+    .msg-card.system {
+      align-self: center;
+      max-width: 90%;
+      text-align: center;
+    }
+
+    .msg-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-family: var(--font-hud);
+      font-size: 10px;
+      letter-spacing: 1.5px;
+      font-weight: 700;
+    }
+
+    .msg-badge.user {
+      color: var(--cyan-bright);
+      justify-content: flex-end;
+    }
+
+    .msg-badge.jarvis {
+      color: var(--gold-accent);
+    }
+
+    .msg-bubble {
+      padding: 12px 18px;
+      border-radius: 8px;
+      font-size: 15px;
+      line-height: 1.55;
+      word-break: break-word;
+      user-select: text;
+    }
+
+    .msg-bubble.user {
+      background: rgba(0, 240, 255, 0.12);
+      border: 1px solid var(--border-cyan);
+      color: #ffffff;
+      border-top-right-radius: 2px;
+    }
+
+    .msg-bubble.jarvis {
+      background: rgba(255, 183, 0, 0.08);
+      border: 1px solid rgba(255, 183, 0, 0.35);
+      color: #fff9e6;
+      border-top-left-radius: 2px;
+      box-shadow: 0 0 15px rgba(255, 183, 0, 0.08);
+    }
+
+    .msg-bubble.system {
+      background: rgba(0, 240, 255, 0.04);
+      border: 1px dashed var(--border-cyan);
+      color: var(--text-dim);
+      font-size: 13px;
+      padding: 8px 16px;
+    }
+
+    .typing-cursor {
+      display: inline-block;
+      width: 8px;
+      height: 16px;
+      background: var(--gold-accent);
+      margin-left: 4px;
+      animation: blink 0.8s infinite;
+      vertical-align: middle;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+
+    /* Input Dock */
+    .input-dock {
+      padding: 16px 20px;
+      border-top: 1px solid var(--border-cyan);
+      background: rgba(5, 12, 24, 0.9);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-bottom-left-radius: 12px;
+      border-bottom-right-radius: 12px;
+    }
+
+    .input-wrapper {
+      flex: 1;
+      position: relative;
+    }
+
+    .input-field {
+      width: 100%;
+      background: rgba(0, 240, 255, 0.05);
+      border: 1px solid var(--border-cyan);
+      border-radius: 6px;
+      padding: 14px 18px;
+      color: #ffffff;
+      font-family: var(--font-chat);
+      font-size: 15px;
+      outline: none;
+      transition: all 0.25s ease;
+      user-select: text;
+    }
+
+    .input-field:focus {
+      background: rgba(0, 240, 255, 0.1);
+      border-color: var(--cyan-bright);
+      box-shadow: 0 0 16px var(--border-cyan-glow);
+    }
+
+    .input-field::placeholder {
+      color: rgba(125, 165, 191, 0.6);
+      font-size: 14px;
+    }
+
+    .btn-send {
+      background: var(--cyan-bright);
+      color: #050811;
+      border: none;
+      border-radius: 6px;
+      font-family: var(--font-hud);
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: 1.5px;
+      padding: 14px 22px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.25s ease;
+      box-shadow: 0 0 15px var(--cyan-bright);
+    }
+
+    .btn-send:hover {
+      background: #ffffff;
+      box-shadow: 0 0 25px #ffffff;
+      transform: translateY(-1px);
+    }
+
+    .btn-send:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      box-shadow: none;
+      transform: none;
+    }
+
+    /* Mobile Sync Button in Header */
+    .btn-mobile-sync {
+      cursor: pointer;
+      background: rgba(0, 240, 255, 0.12);
+      border: 1px solid var(--cyan-bright);
+      color: var(--cyan-bright);
+      font-weight: 700;
+      transition: all 0.25s ease;
+      box-shadow: 0 0 10px rgba(0, 240, 255, 0.25);
+    }
+
+    .btn-mobile-sync:hover {
+      background: var(--cyan-bright);
+      color: #050811;
+      box-shadow: 0 0 18px var(--cyan-bright);
+      transform: translateY(-1px);
+    }
+
+    /* Modal Overlay & Container */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(3, 7, 16, 0.85);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      animation: modalFadeIn 0.25s ease forwards;
+    }
+
+    @keyframes modalFadeIn {
+      from { opacity: 0; transform: scale(0.97); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    .modal-container {
+      background: rgba(8, 20, 38, 0.95);
+      border: 1px solid var(--cyan-bright);
+      border-radius: 12px;
+      box-shadow: 0 0 40px rgba(0, 240, 255, 0.25), inset 0 0 20px rgba(0, 240, 255, 0.08);
+      max-width: 580px;
+      width: 100%;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 22px;
+      border-bottom: 1px solid var(--border-cyan);
+      background: rgba(0, 240, 255, 0.04);
+    }
+
+    .modal-title {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: var(--font-hud);
+      font-size: 13px;
+      letter-spacing: 2px;
+      color: var(--cyan-bright);
+    }
+
+    .modal-glow-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--cyan-bright);
+      box-shadow: 0 0 8px var(--cyan-bright);
+    }
+
+    .modal-close-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-dim);
+      font-size: 18px;
+      cursor: pointer;
+      padding: 4px 8px;
+      border-radius: 4px;
+      transition: all 0.2s ease;
+    }
+
+    .modal-close-btn:hover {
+      color: #fff;
+      background: rgba(255, 51, 68, 0.2);
+    }
+
+    .modal-body {
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    /* Connection Mode Tabs */
+    .sync-tabs {
+      display: flex;
+      gap: 8px;
+      background: rgba(0, 240, 255, 0.05);
+      padding: 4px;
+      border-radius: 8px;
+      border: 1px solid var(--border-cyan);
+    }
+
+    .sync-tab {
+      flex: 1;
+      background: transparent;
+      border: none;
+      color: var(--text-dim);
+      font-family: var(--font-hud);
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      padding: 10px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .sync-tab:hover {
+      color: #fff;
+      background: rgba(0, 240, 255, 0.12);
+    }
+
+    .sync-tab.active {
+      background: var(--cyan-bright);
+      color: #050811;
+      box-shadow: 0 0 15px rgba(0, 240, 255, 0.4);
+    }
+
+    .qr-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .qr-frame {
+      position: relative;
+      padding: 12px;
+      background: #081424;
+      border: 2px solid var(--cyan-bright);
+      border-radius: 8px;
+      box-shadow: 0 0 20px rgba(0, 240, 255, 0.3);
+      overflow: hidden;
+    }
+
+    .qr-frame img {
+      display: block;
+      width: 200px;
+      height: 200px;
+      border-radius: 4px;
+    }
+
+    .qr-scan-line {
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 2px;
+      background: var(--cyan-bright);
+      box-shadow: 0 0 10px var(--cyan-bright);
+      animation: scanAnim 2.5s ease-in-out infinite alternate;
+      pointer-events: none;
+    }
+
+    @keyframes scanAnim {
+      0% { top: 6px; opacity: 0.2; }
+      50% { opacity: 1; }
+      100% { top: calc(100% - 8px); opacity: 0.2; }
+    }
+
+    .qr-badge {
+      font-family: var(--font-hud);
+      font-size: 10px;
+      letter-spacing: 2px;
+      color: var(--cyan-dim);
+    }
+
+    .mobile-info-section {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .info-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .info-label {
+      font-family: var(--font-hud);
+      font-size: 11px;
+      letter-spacing: 1px;
+      color: var(--text-dim);
+    }
+
+    .url-copy-box {
+      display: flex;
+      gap: 8px;
+    }
+
+    .url-copy-box input {
+      flex: 1;
+      background: rgba(0, 240, 255, 0.06);
+      border: 1px solid var(--border-cyan);
+      border-radius: 6px;
+      padding: 10px 14px;
+      color: var(--cyan-bright);
+      font-family: var(--font-hud);
+      font-size: 13px;
+      outline: none;
+      user-select: all;
+    }
+
+    .btn-copy {
+      background: var(--cyan-bright);
+      color: #050811;
+      border: none;
+      border-radius: 6px;
+      font-family: var(--font-hud);
+      font-size: 11px;
+      font-weight: 800;
+      padding: 0 18px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+
+    .btn-copy:hover {
+      background: #fff;
+      box-shadow: 0 0 12px #fff;
+    }
+
+    .guide-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      background: rgba(0, 240, 255, 0.03);
+      border: 1px dashed var(--border-cyan);
+      border-radius: 8px;
+      padding: 14px 16px;
+    }
+
+    .guide-step {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+
+    .step-num {
+      font-family: var(--font-hud);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--cyan-bright);
+      min-width: 20px;
+    }
+
+    .step-text {
+      color: var(--text-main);
+    }
+
+    .step-text strong {
+      color: var(--cyan-bright);
+    }
+
+    .mobile-mic-notice {
+      background: rgba(255, 183, 0, 0.08);
+      border: 1px solid rgba(255, 183, 0, 0.3);
+      border-radius: 8px;
+      padding: 12px 14px;
+      font-size: 12px;
+      line-height: 1.55;
+    }
+
+    .notice-title {
+      font-family: var(--font-hud);
+      font-weight: 700;
+      color: var(--gold-accent);
+      margin-bottom: 4px;
+    }
+
+    .notice-desc {
+      color: #e2f4ff;
+    }
+
+    .notice-desc code {
+      background: rgba(0, 0, 0, 0.4);
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: var(--gold-accent);
+      font-family: monospace;
+      font-size: 11px;
+      word-break: break-all;
+    }
+
+    /* Mobile Responsive Overrides */
+    @media (max-width: 768px) {
+      header {
+        padding: 12px 16px;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+      }
+
+      .brand-title {
+        font-size: 18px;
+      }
+
+      .hud-metrics {
+        width: 100%;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .metric-badge {
+        padding: 5px 10px;
+        font-size: 10px;
+      }
+
+      main {
+        padding: 12px;
+        gap: 16px;
+      }
+
+      .reactor-panel {
+        padding: 20px 14px 16px;
+      }
+
+      .reactor-container {
+        width: 240px;
+        height: 240px;
+        margin: 10px 0;
+      }
+
+      #visualizerCanvas {
+        width: 240px;
+        height: 240px;
+      }
+
+      .arc-reactor {
+        width: 185px;
+        height: 185px;
+      }
+
+      .reactor-ring-outer {
+        width: 215px;
+        height: 215px;
+      }
+
+      .reactor-ring-inner {
+        width: 155px;
+        height: 155px;
+      }
+
+      .reactor-core {
+        width: 95px;
+        height: 95px;
+      }
+
+      .core-status-text {
+        font-size: 10px;
+        letter-spacing: 1px;
+      }
+
+      .reactor-instruction {
+        font-size: 13px;
+        letter-spacing: 2px;
+      }
+
+      .reactor-subtext {
+        font-size: 11px;
+        padding: 0 8px;
+      }
+
+      .controls-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+        width: 100%;
+      }
+
+      .btn-action {
+        padding: 10px 8px;
+        font-size: 11px;
+      }
+
+      .hud-console {
+        min-height: 420px;
+        height: 52vh;
+      }
+
+      .messages-container {
+        padding: 14px;
+        gap: 12px;
+      }
+
+      .msg-card {
+        max-width: 92%;
+      }
+
+      .msg-bubble {
+        padding: 10px 14px;
+        font-size: 14px;
+      }
+
+      .input-dock {
+        padding: 12px 14px;
+        padding-bottom: max(12px, env(safe-area-inset-bottom));
+      }
+
+      .input-field {
+        font-size: 16px; /* Prevents auto-zoom on iOS Safari */
+        padding: 12px 14px;
+      }
+
+      .btn-send {
+        padding: 12px 16px;
+        font-size: 11px;
+      }
+
+      .modal-container {
+        max-height: 90vh;
+        overflow-y: auto;
+      }
+
+      .modal-body {
+        padding: 16px;
+      }
+    }
+
+    /* Footer */
+    footer {
+      position: relative;
+      z-index: 10;
+      text-align: center;
+      padding: 14px;
+      font-family: var(--font-hud);
+      font-size: 10px;
+      letter-spacing: 2px;
+      color: var(--text-dim);
+      border-top: 1px solid rgba(0, 240, 255, 0.15);
+      background: rgba(5, 8, 17, 0.9);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top HUD Header -->
+  <header>
+    <div class="brand">
+      <div class="brand-logo"></div>
+      <div>
+        <div class="brand-title">J.A.R.V.I.S.</div>
+        <div class="brand-sub">STARK INDUSTRIES NEURAL ASSISTANT</div>
+      </div>
+    </div>
+
+    <div class="hud-metrics">
+      <div class="metric-badge">
+        <span class="status-dot offline" id="statusDot"></span>
+        <span id="statusLabel">STANDBY</span>
+      </div>
+      <div class="metric-badge">
+        <span>MODEL:</span>
+        <span id="modelLabel" style="color: var(--cyan-bright);">GEMINI 2.5 LIVE</span>
+      </div>
+      <div class="metric-badge">
+        <span>VOICE:</span>
+        <span id="voiceLabel" style="color: var(--gold-accent);">PUCK</span>
+      </div>
+      <button class="metric-badge btn-mobile-sync" id="mobileModalBtn" title="스마트폰 연결 및 QR 코드">
+        <span>📱 모바일 연동</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Workstation -->
+  <main>
+    <!-- Left: Arc Reactor Centerpiece -->
+    <section class="reactor-panel">
+      <div class="reactor-container" id="reactorBtn" title="클릭하여 자비스 활성화 / 비활성화">
+        <canvas id="visualizerCanvas" width="320" height="320"></canvas>
+        <div class="reactor-ring-outer"></div>
+        <div class="reactor-ring-inner"></div>
+        <div class="arc-reactor" id="arcReactor">
+          <div class="reactor-core" id="reactorCore">
+            <span class="core-status-text" id="coreText">CLICK TO<br>INITIALIZE</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="reactor-instruction" id="reactorInstruction">
+        CORE OFFLINE
+      </div>
+      <div class="reactor-subtext" id="reactorSubtext">
+        아크 리액터를 클릭하여 자비스 음성 비서를 연결하십시오.<br>
+        연결 즉시 마이크와 키보드로 자유롭게 대화할 수 있습니다.
+      </div>
+
+      <!-- Quick Control Action Buttons -->
+      <div class="controls-grid">
+        <button class="btn-action active" id="micToggleBtn">
+          <span>🎙️ 마이크: 켜짐</span>
+        </button>
+        <button class="btn-action" id="audioMuteBtn">
+          <span>🔊 스피커: 정상</span>
+        </button>
+        <button class="btn-action" id="clearChatBtn">
+          <span>🧹 대화 정리</span>
+        </button>
+        <button class="btn-action danger" id="powerBtn">
+          <span>⚡ 시스템 종료</span>
+        </button>
+      </div>
+    </section>
+
+    <!-- Right: Holographic HUD Chat Console -->
+    <section class="hud-console">
+      <div class="console-header">
+        <div class="console-header-title">LIVE TELEMETRY // TRANSCRIPTION STREAM</div>
+        <div id="liveLatency">STREAM: READY</div>
+      </div>
+
+      <div class="messages-container" id="messagesContainer">
+        <!-- Initial Welcome Message -->
+        <div class="msg-card system">
+          <div class="msg-bubble system">
+            🚀 <strong>J.A.R.V.I.S. 온라인 준비 완료</strong><br>
+            아크 리액터를 누르면 마이크가 켜지고 음성 & 텍스트 동시 대화가 활성화됩니다.
+          </div>
+        </div>
+      </div>
+
+      <div class="input-dock">
+        <div class="input-wrapper">
+          <input
+            type="text"
+            class="input-field"
+            id="textInput"
+            placeholder="자비스에게 명령하거나 질문을 입력하세요... (Enter 키로 전송)"
+            autocomplete="off"
+          />
+        </div>
+        <button class="btn-send" id="sendBtn">
+          <span>SEND [↵]</span>
+        </button>
+      </div>
+    </section>
+  </main>
+
+  <!-- Stark Mobile Sync Modal -->
+  <div class="modal-overlay" id="mobileModal" style="display: none;">
+    <div class="modal-container">
+      <div class="modal-header">
+        <div class="modal-title">
+          <span class="modal-glow-dot"></span>
+          <span>STARK MOBILE SYNC // NEURAL LINK</span>
+        </div>
+        <button class="modal-close-btn" id="closeMobileModalBtn" title="닫기">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- Connection Mode Tabs -->
+        <div class="sync-tabs">
+          <button class="sync-tab active" id="tabPublic" type="button">
+            🌐 외부 인터넷 (LTE / 5G / 카페)
+          </button>
+          <button class="sync-tab" id="tabLocal" type="button">
+            🏠 동일 Wi-Fi (로컬)
+          </button>
+        </div>
+
+        <div class="qr-section">
+          <div class="qr-frame">
+            <img id="qrCodeImg" alt="QR Code" src="" />
+            <div class="qr-scan-line"></div>
+          </div>
+          <div class="qr-badge" id="qrBadgeText">SCAN WITH SMARTPHONE CAMERA</div>
+        </div>
+
+        <div class="mobile-info-section">
+          <div class="info-group">
+            <label class="info-label" id="urlLabelText">스마트폰 접속 주소 (HTTPS 보안 연결):</label>
+            <div class="url-copy-box">
+              <input type="text" id="mobileUrlInput" readonly />
+              <button class="btn-copy" id="copyUrlBtn">복사</button>
+            </div>
+          </div>
+
+          <div class="guide-steps" id="guideSteps">
+            <!-- Dynamic steps populated by JavaScript -->
+          </div>
+
+          <div class="mobile-mic-notice" id="mobileMicNotice">
+            <!-- Dynamic notice populated by JavaScript -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    STARK INDUSTRIES PROTOCOL // POWERED BY GOOGLE GEMINI 2.5 LIVE WEBSOCKETS // ZERO-LATENCY DUAL MODALITY
+  </footer>
+
+  <script>
+    // State Variables
+    let ws = null;
+    let isConnected = false;
+    let isMicMuted = false;
+    let isAudioMuted = false;
+    let heartbeatTimer = null;
+
+    let audioCtx = null;
+    let micStream = null;
+    let micProcessorNode = null;
+    let micSourceNode = null;
+
+    let analyserNode = null;
+    let visualizerDataArray = null;
+
+    let nextPlayTime = 0;
+    let currentJarvisCard = null;
+    let currentJarvisBubble = null;
+    let isJarvisSpeaking = false;
+
+    // DOM Elements
+    const reactorBtn = document.getElementById("reactorBtn");
+    const arcReactor = document.getElementById("arcReactor");
+    const reactorCore = document.getElementById("reactorCore");
+    const coreText = document.getElementById("coreText");
+    const reactorInstruction = document.getElementById("reactorInstruction");
+    const reactorSubtext = document.getElementById("reactorSubtext");
+    const statusDot = document.getElementById("statusDot");
+    const statusLabel = document.getElementById("statusLabel");
+    const modelLabel = document.getElementById("modelLabel");
+    const voiceLabel = document.getElementById("voiceLabel");
+    const micToggleBtn = document.getElementById("micToggleBtn");
+    const audioMuteBtn = document.getElementById("audioMuteBtn");
+    const clearChatBtn = document.getElementById("clearChatBtn");
+    const powerBtn = document.getElementById("powerBtn");
+    const messagesContainer = document.getElementById("messagesContainer");
+    const textInput = document.getElementById("textInput");
+    const sendBtn = document.getElementById("sendBtn");
+    const visualizerCanvas = document.getElementById("visualizerCanvas");
+    const canvasCtx = visualizerCanvas.getContext("2d");
+
+    // Mobile Modal Elements
+    const mobileModal = document.getElementById("mobileModal");
+    const mobileModalBtn = document.getElementById("mobileModalBtn");
+    const closeMobileModalBtn = document.getElementById("closeMobileModalBtn");
+    const mobileUrlInput = document.getElementById("mobileUrlInput");
+    const copyUrlBtn = document.getElementById("copyUrlBtn");
+    const qrCodeImg = document.getElementById("qrCodeImg");
+    const tabPublic = document.getElementById("tabPublic");
+    const tabLocal = document.getElementById("tabLocal");
+    const urlLabelText = document.getElementById("urlLabelText");
+    const qrBadgeText = document.getElementById("qrBadgeText");
+    const guideSteps = document.getElementById("guideSteps");
+    const mobileMicNotice = document.getElementById("mobileMicNotice");
+
+    // Audio Visualizer Loop
+    function startVisualizer() {
+      const centerX = visualizerCanvas.width / 2;
+      const centerY = visualizerCanvas.height / 2;
+      const radius = 135;
+
+      function render() {
+        requestAnimationFrame(render);
+        canvasCtx.clearRect(0, 0, visualizerCanvas.width, visualizerCanvas.height);
+
+        if (!analyserNode || !isConnected) return;
+
+        analyserNode.getByteFrequencyData(visualizerDataArray);
+        const bars = 48;
+        const step = Math.PI * 2 / bars;
+
+        for (let i = 0; i < bars; i++) {
+          const value = visualizerDataArray[i % visualizerDataArray.length] || 0;
+          const barHeight = (value / 255) * 26;
+
+          const angle = i * step;
+          const x1 = centerX + Math.cos(angle) * radius;
+          const y1 = centerY + Math.sin(angle) * radius;
+          const x2 = centerX + Math.cos(angle) * (radius + barHeight);
+          const y2 = centerY + Math.sin(angle) * (radius + barHeight);
+
+          canvasCtx.beginPath();
+          canvasCtx.moveTo(x1, y1);
+          canvasCtx.lineTo(x2, y2);
+          canvasCtx.lineWidth = 2.5;
+
+          if (isJarvisSpeaking) {
+            canvasCtx.strokeStyle = `rgba(255, 183, 0, ${Math.max(0.3, value / 255)})`;
+          } else {
+            canvasCtx.strokeStyle = `rgba(0, 240, 255, ${Math.max(0.3, value / 255)})`;
+          }
+          canvasCtx.stroke();
+        }
+      }
+      render();
+    }
+    startVisualizer();
+
+    // High-Tech Notification Chime
+    function playChime() {
+      if (!audioCtx || isAudioMuted) return;
+      try {
+        const now = audioCtx.currentTime;
+        const osc1 = audioCtx.createOscillator();
+        const osc2 = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+
+        osc1.type = "sine";
+        osc1.frequency.setValueAtTime(880, now);
+        osc1.frequency.exponentialRampToValueAtTime(1760, now + 0.15);
+
+        osc2.type = "triangle";
+        osc2.frequency.setValueAtTime(440, now);
+        osc2.frequency.exponentialRampToValueAtTime(880, now + 0.15);
+
+        gain.gain.setValueAtTime(0.12, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+
+        osc1.connect(gain);
+        osc2.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        osc1.start(now);
+        osc2.start(now);
+        osc1.stop(now + 0.35);
+        osc2.stop(now + 0.35);
+      } catch (e) {
+        console.warn("Chime error:", e);
+      }
+    }
+
+    // Initialize AudioContext & Microphone
+    async function initAudioEngine() {
+      if (!audioCtx) {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AudioContextClass();
+      }
+      if (audioCtx.state === "suspended") {
+        await audioCtx.resume();
+      }
+
+      // Visualizer Analyser Node
+      analyserNode = audioCtx.createAnalyser();
+      analyserNode.fftSize = 128;
+      visualizerDataArray = new Uint8Array(analyserNode.frequencyBinCount);
+
+      // Check if getUserMedia is supported in current context (HTTP vs HTTPS / localhost)
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        console.warn("navigator.mediaDevices.getUserMedia is unavailable in this context.");
+        appendMessage("system", "📱 <strong>모바일 접속 모드:</strong> 모바일 브라우저의 보안 정책으로 마이크가 제한될 수 있습니다. 하단 텍스트 창으로 질문을 타이핑하시면, 자비스의 <strong>음성 답변은 모바일 스피커로 정상 출력</strong>됩니다.");
+        return;
+      }
+
+      // Request Microphone Stream
+      try {
+        micStream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            channelCount: 1,
+            echoCancellation: true,
+            noiseSuppression: true,
+            autoGainControl: true,
+          }
+        });
+
+        micSourceNode = audioCtx.createMediaStreamSource(micStream);
+        micSourceNode.connect(analyserNode);
+
+        // ScriptProcessorNode for Raw 16kHz PCM Capture
+        const bufferSize = 4096;
+        micProcessorNode = audioCtx.createScriptProcessor(bufferSize, 1, 1);
+
+        micProcessorNode.onaudioprocess = (e) => {
+          // Clear output buffer to guarantee no mic pass-through to speakers
+          const output = e.outputBuffer.getChannelData(0);
+          output.fill(0);
+
+          if (!isConnected || isMicMuted || !ws || ws.readyState !== WebSocket.OPEN) {
+            return;
+          }
+
+          const inputFloat32 = e.inputBuffer.getChannelData(0);
+          const sampleRate = audioCtx.sampleRate;
+          const pcm16Data = downsampleAndConvertToPCM16(inputFloat32, sampleRate, 16000);
+
+          if (pcm16Data && pcm16Data.byteLength > 0) {
+            ws.send(pcm16Data.buffer);
+          }
+        };
+
+        // Connect micProcessor through a zero-gain node to prevent local feedback/screeching
+        const zeroGain = audioCtx.createGain();
+        zeroGain.gain.value = 0;
+        micSourceNode.connect(micProcessorNode);
+        micProcessorNode.connect(zeroGain);
+        zeroGain.connect(audioCtx.destination);
+      } catch (err) {
+        console.warn("Microphone access failed or denied:", err);
+        appendMessage("system", "⚠️ 마이크 권한이 허용되지 않았습니다. 하단 텍스트 입력창으로 타이핑하여 대화하실 수 있습니다.");
+      }
+    }
+
+    // Downsample Float32 audio to 16,000Hz Int16 PCM
+    function downsampleAndConvertToPCM16(buffer, sourceRate, targetRate) {
+      if (sourceRate === targetRate) {
+        const result = new Int16Array(buffer.length);
+        for (let i = 0; i < buffer.length; i++) {
+          const s = Math.max(-1, Math.min(1, buffer[i]));
+          result[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
+        }
+        return result;
+      }
+
+      const ratio = sourceRate / targetRate;
+      const targetLength = Math.round(buffer.length / ratio);
+      const result = new Int16Array(targetLength);
+
+      for (let i = 0; i < targetLength; i++) {
+        const originIndex = Math.floor(i * ratio);
+        const s = Math.max(-1, Math.min(1, buffer[originIndex]));
+        result[i] = s < 0 ? s * 0x8000 : s * 0x7fff;
+      }
+      return result;
+    }
+
+    // Playback 24kHz PCM Chunks from Gemini
+    function playIncomingPCMChunk(arrayBuffer) {
+      if (!audioCtx || isAudioMuted) return;
+
+      const int16Array = new Int16Array(arrayBuffer);
+      const float32Array = new Float32Array(int16Array.length);
+
+      for (let i = 0; i < int16Array.length; i++) {
+        float32Array[i] = int16Array[i] / 32768.0;
+      }
+
+      const audioBuffer = audioCtx.createBuffer(1, float32Array.length, 24000);
+      audioBuffer.getChannelData(0).set(float32Array);
+
+      const sourceNode = audioCtx.createBufferSource();
+      sourceNode.buffer = audioBuffer;
+
+      // Connect to analyser for Arc Reactor pulse effect
+      sourceNode.connect(analyserNode);
+      sourceNode.connect(audioCtx.destination);
+
+      const now = audioCtx.currentTime;
+      if (nextPlayTime < now) {
+        nextPlayTime = now + 0.04;
+      }
+      sourceNode.start(nextPlayTime);
+      nextPlayTime += audioBuffer.duration;
+    }
+
+    // WebSocket Connection Handling
+    async function connectJarvis() {
+      if (isConnected) return;
+
+      setUIState("connecting");
+      await initAudioEngine();
+
+      const isHttps = location.protocol === "https:";
+      const isTunnel = location.hostname.includes("trycloudflare.com") || location.hostname.includes("pinggy") || location.hostname.includes("ngrok");
+      const protocol = isHttps ? "wss:" : "ws:";
+
+      let wsUrl;
+      if (isHttps || isTunnel || !location.port || location.port === "80" || location.port === "443" || location.port === "8000") {
+        // Connect over reverse proxy on same port
+        wsUrl = `${protocol}//${location.host}/ws`;
+      } else {
+        const wsPort = window.JARVIS_WS_PORT || 8001;
+        wsUrl = `${protocol}//${location.hostname}:${wsPort}/ws`;
+      }
+
+      try {
+        ws = new WebSocket(wsUrl);
+      } catch (err) {
+        console.error("WebSocket creation failed:", err);
+        appendMessage("system", "⚠️ 웹소켓 연결을 생성하지 못했습니다. 서버 주소를 확인해 주십시오.");
+        disconnectJarvis();
+        return;
+      }
+
+      ws.binaryType = "arraybuffer";
+
+      ws.onopen = () => {
+        console.log(`WebSocket connected to J.A.R.V.I.S. server at ${wsUrl}`);
+        if (heartbeatTimer) clearInterval(heartbeatTimer);
+        heartbeatTimer = setInterval(() => {
+          if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ type: "ping" }));
+          }
+        }, 10000);
+      };
+
+      ws.onmessage = (event) => {
+        // Binary Data = 24kHz PCM Audio from Jarvis
+        if (event.data instanceof ArrayBuffer) {
+          playIncomingPCMChunk(event.data);
+          return;
+        }
+
+        // Text Data = JSON Status or Transcriptions
+        try {
+          const msg = JSON.parse(event.data);
+          handleJsonMessage(msg);
+        } catch (e) {
+          console.error("JSON parse error:", e);
+        }
+      };
+
+      ws.onerror = (err) => {
+        console.error("WebSocket error:", err);
+        appendMessage("system", "⚠️ 웹소켓 통신 오류가 발생했습니다. 백엔드 서버(web_jarvis.py)가 실행 중인지 확인해 주십시오.");
+      };
+
+      ws.onclose = () => {
+        console.log("WebSocket closed");
+        disconnectJarvis();
+      };
+    }
+
+    function disconnectJarvis() {
+      if (!isConnected && (!ws || ws.readyState === WebSocket.CLOSED)) return;
+
+      isConnected = false;
+      nextPlayTime = 0;
+
+      if (heartbeatTimer) {
+        clearInterval(heartbeatTimer);
+        heartbeatTimer = null;
+      }
+
+      if (ws) {
+        ws.close();
+        ws = null;
+      }
+
+      if (micStream) {
+        micStream.getTracks().forEach(t => t.stop());
+        micStream = null;
+      }
+
+      setUIState("offline");
+      appendMessage("system", "🔒 자비스 시스템이 오프라인 상태로 전환되었습니다.");
+    }
+
+    // Handle Incoming JSON Messages from Server
+    function handleJsonMessage(msg) {
+      switch (msg.type) {
+        case "status":
+          if (msg.state === "ready") {
+            setUIState("online");
+            if (msg.model) modelLabel.textContent = msg.model;
+            if (msg.voice) voiceLabel.textContent = msg.voice.toUpperCase();
+            appendMessage("system", "✨ <strong>J.A.R.V.I.S. 온라인 연결 완료.</strong> 말씀하시거나 아래 입력창에 타이핑해 주세요, Sir.");
+          }
+          break;
+
+        case "user_transcription":
+          if (msg.wake_word) {
+            playChime();
+          }
+          appendMessage("user", msg.text, "VOICE");
+          // Reset Jarvis current bubble for next reply
+          currentJarvisCard = null;
+          currentJarvisBubble = null;
+          break;
+
+        case "speaking_state":
+          isJarvisSpeaking = msg.is_speaking;
+          updateSpeakingVisuals(isJarvisSpeaking);
+          break;
+
+        case "jarvis_transcription":
+          streamJarvisResponse(msg.text);
+          break;
+
+        case "turn_complete":
+          isJarvisSpeaking = false;
+          updateSpeakingVisuals(false);
+          finalizeJarvisResponse();
+          break;
+
+        case "error":
+          appendMessage("system", `❌ [오류]: ${msg.message}`);
+          break;
+      }
+    }
+
+    // UI State Management
+    function setUIState(state) {
+      if (state === "online") {
+        isConnected = true;
+        statusDot.className = "status-dot";
+        statusLabel.textContent = "ONLINE // READY";
+        coreText.innerHTML = "JARVIS<br>ACTIVE";
+        reactorInstruction.textContent = "SYSTEM ONLINE // LISTENING";
+        reactorSubtext.textContent = "마이크가 상시 열려 있습니다. 말씀하시거나 타이핑하십시오.";
+        arcReactor.style.borderColor = "var(--cyan-bright)";
+        reactorCore.classList.remove("speaking");
+      } else if (state === "connecting") {
+        statusDot.className = "status-dot";
+        statusLabel.textContent = "INITIALIZING...";
+        coreText.innerHTML = "CONNECTING...";
+        reactorInstruction.textContent = "ESTABLISHING NEURAL LINK...";
+        reactorSubtext.textContent = "Gemini 2.5 Live 서버에 연결 중입니다. 잠시만 기다려 주십시오...";
+      } else {
+        isConnected = false;
+        statusDot.className = "status-dot offline";
+        statusLabel.textContent = "STANDBY";
+        coreText.innerHTML = "CLICK TO<br>INITIALIZE";
+        reactorInstruction.textContent = "CORE OFFLINE";
+        reactorSubtext.textContent = "아크 리액터를 클릭하여 자비스를 활성화하십시오.";
+        reactorCore.classList.remove("speaking");
+      }
+    }
+
+    function updateSpeakingVisuals(speaking) {
+      if (speaking) {
+        statusDot.className = "status-dot speaking";
+        statusLabel.textContent = "SPEAKING...";
+        coreText.innerHTML = "JARVIS<br>SPEAKING";
+        reactorCore.classList.add("speaking");
+      } else if (isConnected) {
+        statusDot.className = "status-dot";
+        statusLabel.textContent = "ONLINE // READY";
+        coreText.innerHTML = "JARVIS<br>ACTIVE";
+        reactorCore.classList.remove("speaking");
+      }
+    }
+
+    // Append Message to HUD Console
+    function appendMessage(role, text, mode = "") {
+      const card = document.createElement("div");
+      card.className = `msg-card ${role}`;
+
+      if (role === "user") {
+        const badge = document.createElement("div");
+        badge.className = "msg-badge user";
+        badge.textContent = mode ? `USER [${mode}]` : "USER";
+        card.appendChild(badge);
+      } else if (role === "jarvis") {
+        const badge = document.createElement("div");
+        badge.className = "msg-badge jarvis";
+        badge.textContent = "J.A.R.V.I.S.";
+        card.appendChild(badge);
+      }
+
+      const bubble = document.createElement("div");
+      bubble.className = `msg-bubble ${role}`;
+      bubble.innerHTML = text;
+      card.appendChild(bubble);
+
+      messagesContainer.appendChild(card);
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+      return { card, bubble };
+    }
+
+    // Stream Jarvis Real-Time Words
+    function streamJarvisResponse(textChunk) {
+      if (!currentJarvisBubble) {
+        const res = appendMessage("jarvis", "");
+        currentJarvisCard = res.card;
+        currentJarvisBubble = res.bubble;
+      }
+
+      currentJarvisBubble.innerHTML += textChunk;
+      messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    }
+
+    function finalizeJarvisResponse() {
+      currentJarvisCard = null;
+      currentJarvisBubble = null;
+    }
+
+    // Send Text Input to Jarvis
+    function sendTextMessage() {
+      const text = textInput.value.trim();
+      if (!text) return;
+
+      if (!isConnected) {
+        connectJarvis().then(() => {
+          setTimeout(() => sendTextMessage(), 1200);
+        });
+        return;
+      }
+
+      appendMessage("user", text, "TYPED");
+      textInput.value = "";
+
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+          type: "text_input",
+          text: text
+        }));
+      }
+    }
+
+    // Mobile Modal & QR Functions
+    let currentSyncMode = "public";
+
+    function getLocalUrl() {
+      const localIp = window.JARVIS_LOCAL_IP || location.hostname;
+      const httpPort = window.JARVIS_HTTP_PORT || location.port || "8000";
+      return `http://${localIp}:${httpPort}`;
+    }
+
+    function getPublicUrl() {
+      if (window.JARVIS_TUNNEL_URL && window.JARVIS_TUNNEL_URL.startsWith("http")) {
+        return window.JARVIS_TUNNEL_URL;
+      }
+      if (location.protocol === "https:" || location.hostname.includes("trycloudflare.com")) {
+        return `${location.protocol}//${location.host}`;
+      }
+      return "";
+    }
+
+    function renderModalContent(mode) {
+      currentSyncMode = mode;
+      const publicUrl = getPublicUrl();
+      const localUrl = getLocalUrl();
+
+      if (mode === "public") {
+        tabPublic.classList.add("active");
+        tabLocal.classList.remove("active");
+
+        if (publicUrl) {
+          mobileUrlInput.value = publicUrl;
+          qrBadgeText.textContent = "SCAN WITH CAMERA // ANYWHERE ACCESS";
+          urlLabelText.textContent = "🌐 인터넷 어디서나 접속 주소 (HTTPS 보안 연결):";
+          qrCodeImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(publicUrl)}&color=00f0ff&bgcolor=081424&margin=10`;
+
+          guideSteps.innerHTML = `
+            <div class="guide-step">
+              <span class="step-num">01</span>
+              <span class="step-text">스마트폰에서 <strong>LTE/5G 데이터</strong> 또는 외부 Wi-Fi로 접속 가능합니다.</span>
+            </div>
+            <div class="guide-step">
+              <span class="step-num">02</span>
+              <span class="step-text">카메라로 <strong>QR 코드를 스캔</strong>하거나 위 HTTPS 주소로 이동합니다.</span>
+            </div>
+            <div class="guide-step">
+              <span class="step-num">03</span>
+              <span class="step-text">브라우저의 <strong>마이크 권한 '허용'</strong>을 누르면 음성 대화가 즉시 활성화됩니다.</span>
+            </div>
+          `;
+
+          mobileMicNotice.innerHTML = `
+            <div class="notice-title">🔒 HTTPS 보안 암호화 완벽 지원</div>
+            <div class="notice-desc">
+              Cloudflare 보안 터널을 통해 <strong>아이폰(Safari) 및 안드로이드(Chrome) 모두 마이크가 기본 허용</strong>됩니다.<br>
+              집 밖, 카페, 이동 중 어디서나 자비스와 자유롭게 대화하세요!
+            </div>
+          `;
+        } else {
+          mobileUrlInput.value = "터널 생성 중이거나 로컬 전용 모드입니다.";
+          qrBadgeText.textContent = "LOCAL WI-FI ONLY";
+          urlLabelText.textContent = "외부 인터넷 주소를 확인하는 중입니다:";
+          guideSteps.innerHTML = `
+            <div class="guide-step">
+              <span class="step-num">💡</span>
+              <span class="step-text">외부 터널을 가져오지 못했습니다. 상단의 <strong>[동일 Wi-Fi]</strong> 탭을 클릭하여 접속해 주십시오.</span>
+            </div>
+          `;
+          mobileMicNotice.innerHTML = `
+            <div class="notice-desc">동일한 Wi-Fi 환경에서는 [동일 Wi-Fi] 탭을 이용하시면 즉시 연결됩니다.</div>
+          `;
+        }
+      } else {
+        tabPublic.classList.remove("active");
+        tabLocal.classList.add("active");
+
+        mobileUrlInput.value = localUrl;
+        qrBadgeText.textContent = "SCAN WITH CAMERA // SAME WI-FI";
+        urlLabelText.textContent = "🏠 모바일 직접 접속 주소 (같은 Wi-Fi):";
+        qrCodeImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(localUrl)}&color=00f0ff&bgcolor=081424&margin=10`;
+
+        guideSteps.innerHTML = `
+          <div class="guide-step">
+            <span class="step-num">01</span>
+            <span class="step-text">스마트폰을 Mac과 <strong>동일한 Wi-Fi 공유기</strong>에 연결합니다.</span>
+          </div>
+          <div class="guide-step">
+            <span class="step-num">02</span>
+            <span class="step-text">스마트폰 카메라로 <strong>QR 코드를 스캔</strong>하거나 위 주소로 접속합니다.</span>
+          </div>
+          <div class="guide-step">
+            <span class="step-num">03</span>
+            <span class="step-text">중앙의 <strong>아크 리액터</strong>를 터치하여 대화를 시작합니다.</span>
+          </div>
+        `;
+
+        mobileMicNotice.innerHTML = `
+          <div class="notice-title">💡 로컬 Wi-Fi 마이크 안내</div>
+          <div class="notice-desc">
+            • <strong>타이핑 및 스피커 듣기:</strong> 별도 설정 없이 즉시 100% 작동합니다.<br>
+            • 마이크 음성 입력까지 원하시면 <strong>[외부 인터넷]</strong> 탭의 HTTPS 주소를 이용하시는 것을 추천합니다.
+          </div>
+        `;
+      }
+    }
+
+    function openMobileModal() {
+      const publicUrl = getPublicUrl();
+      if (publicUrl) {
+        renderModalContent("public");
+      } else {
+        renderModalContent("local");
+      }
+      mobileModal.style.display = "flex";
+    }
+
+    function closeMobileModal() {
+      mobileModal.style.display = "none";
+    }
+
+    tabPublic.addEventListener("click", () => renderModalContent("public"));
+    tabLocal.addEventListener("click", () => renderModalContent("local"));
+
+    mobileModalBtn.addEventListener("click", openMobileModal);
+    closeMobileModalBtn.addEventListener("click", closeMobileModal);
+    mobileModal.addEventListener("click", (e) => {
+      if (e.target === mobileModal) {
+        closeMobileModal();
+      }
+    });
+
+    copyUrlBtn.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(mobileUrlInput.value);
+        const originalText = copyUrlBtn.textContent;
+        copyUrlBtn.textContent = "복사됨! ✓";
+        copyUrlBtn.style.background = "#00ff88";
+        setTimeout(() => {
+          copyUrlBtn.textContent = originalText;
+          copyUrlBtn.style.background = "";
+        }, 2000);
+      } catch (err) {
+        mobileUrlInput.select();
+        document.execCommand("copy");
+        copyUrlBtn.textContent = "복사됨! ✓";
+        setTimeout(() => { copyUrlBtn.textContent = "복사"; }, 2000);
+      }
+    });
+
+    // Event Listeners
+    function toggleJarvis(e) {
+      if (e && e.type === "touchend") {
+        e.preventDefault();
+      }
+      if (!isConnected) {
+        connectJarvis();
+      } else {
+        disconnectJarvis();
+      }
+    }
+
+    reactorBtn.addEventListener("click", toggleJarvis);
+    reactorBtn.addEventListener("touchend", toggleJarvis, { passive: false });
+
+    sendBtn.addEventListener("click", sendTextMessage);
+    textInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        sendTextMessage();
+      }
+    });
+
+    micToggleBtn.addEventListener("click", () => {
+      isMicMuted = !isMicMuted;
+      if (isMicMuted) {
+        micToggleBtn.innerHTML = "<span>🎙️ 마이크: 음소거</span>";
+        micToggleBtn.classList.remove("active");
+        micToggleBtn.classList.add("danger");
+      } else {
+        micToggleBtn.innerHTML = "<span>🎙️ 마이크: 켜짐</span>";
+        micToggleBtn.classList.add("active");
+        micToggleBtn.classList.remove("danger");
+      }
+    });
+
+    audioMuteBtn.addEventListener("click", () => {
+      isAudioMuted = !isAudioMuted;
+      if (isAudioMuted) {
+        audioMuteBtn.innerHTML = "<span>🔇 스피커: 음소거</span>";
+        audioMuteBtn.classList.add("danger");
+      } else {
+        audioMuteBtn.innerHTML = "<span>🔊 스피커: 정상</span>";
+        audioMuteBtn.classList.remove("danger");
+      }
+    });
+
+    clearChatBtn.addEventListener("click", () => {
+      messagesContainer.innerHTML = "";
+      appendMessage("system", "🧹 대화 로그가 초기화되었습니다.");
+    });
+
+    powerBtn.addEventListener("click", () => {
+      disconnectJarvis();
+    });
+  </script>
+</body>
+</html>

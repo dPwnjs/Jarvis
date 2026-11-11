@@ -1,0 +1,7 @@
+google-genai>=0.1.1
+websockets>=13.0
+python-dotenv>=1.0.1
+Pillow>=10.0.0
+# Note: pyaudio는 Mac 로컬 터미널 전용(jarvis/main.py)이며 웹 서버(web_jarvis.py)에는 필요 없습니다.
+pyaudio>=0.2.14; sys_platform == 'darwin'
+
