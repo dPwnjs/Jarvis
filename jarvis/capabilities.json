@@ -11,6 +11,16 @@
       "status": "active"
     },
     {
+      "name": "get_weather",
+      "description": "국내외 주요 도시의 실시간 날씨, 기온, 습도, 풍속 조회",
+      "status": "active"
+    },
+    {
+      "name": "search_information",
+      "description": "Gemini 지능 분석망을 통한 특정 지식, 인물, 역사, 과학, 기술, 일상 정보 심층 탐색 및 요약",
+      "status": "active"
+    },
+    {
       "name": "request_and_register_capability",
       "description": "사용자(Sir)에게 허락/승인받은 신규 기능을 시스템에 정식 등록",
       "status": "active"
