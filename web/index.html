@@ -1264,6 +1264,7 @@
     let micStream = null;
     let micProcessorNode = null;
     let micSourceNode = null;
+    let micKeepAliveGain = null;
 
     let analyserNode = null;
     let visualizerDataArray = null;
@@ -1272,6 +1273,19 @@
     let currentJarvisCard = null;
     let currentJarvisBubble = null;
     let isJarvisSpeaking = false;
+
+    // Speech Recognition (Web Speech API Dual Pipeline)
+    let recognition = null;
+    let isSpeechRecognitionActive = false;
+    let isSpeechRecognitionSupported = false;
+    let interimUserCard = null;
+    let interimUserBubble = null;
+    let lastSpokenUserText = "";
+
+    function escapeHtml(str) {
+      if (!str) return "";
+      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
 
     // DOM Elements
     const apiKeyBtn = document.getElementById("apiKeyBtn");
@@ -1385,6 +1399,134 @@
       }
     }
 
+    // Initialize Web Speech API for Real-Time Korean Speech Recognition
+    function initSpeechRecognition() {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        console.warn("Web Speech API is not supported in this browser. Fallback to raw 16kHz PCM streaming.");
+        isSpeechRecognitionSupported = false;
+        return;
+      }
+
+      isSpeechRecognitionSupported = true;
+      try {
+        recognition = new SpeechRecognition();
+        recognition.lang = "ko-KR";
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.maxAlternatives = 1;
+
+        recognition.onstart = () => {
+          isSpeechRecognitionActive = true;
+          console.log("🎙️ [STT] 브라우저 음성 인식 엔진 활성화 (ko-KR)");
+          if (reactorInstruction && isConnected && !isJarvisSpeaking) {
+            reactorInstruction.textContent = "SYSTEM ONLINE // LISTENING (VOICE ACTIVE)";
+          }
+        };
+
+        recognition.onresult = (event) => {
+          if (isJarvisSpeaking || isMicMuted) {
+            return;
+          }
+
+          let interimTranscript = "";
+          let finalTranscript = "";
+
+          for (let i = event.resultIndex; i < event.results.length; ++i) {
+            const transcript = event.results[i][0].transcript;
+            if (event.results[i].isFinal) {
+              finalTranscript += transcript;
+            } else {
+              interimTranscript += transcript;
+            }
+          }
+
+          // Real-time interim visual feedback on HUD console
+          if (interimTranscript.trim()) {
+            if (!interimUserBubble) {
+              const res = appendMessage("user", "", "VOICE // 실시간 인식 중");
+              interimUserCard = res.card;
+              interimUserBubble = res.bubble;
+            }
+            interimUserBubble.innerHTML = `<span style="opacity: 0.88; color: #00f0ff;">${escapeHtml(interimTranscript)}</span> <span class="typing-cursor" style="color: var(--cyan-bright);">▌</span>`;
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+          }
+
+          // Final recognized sentence
+          if (finalTranscript.trim()) {
+            const cleanFinal = finalTranscript.trim();
+            lastSpokenUserText = cleanFinal;
+
+            if (interimUserCard && interimUserBubble) {
+              const badge = interimUserCard.querySelector(".msg-badge");
+              if (badge) badge.textContent = "USER [VOICE]";
+              interimUserBubble.textContent = cleanFinal;
+              interimUserCard = null;
+              interimUserBubble = null;
+            } else {
+              appendMessage("user", cleanFinal, "VOICE");
+            }
+
+            console.log("🎙️ [음성 인식 완료]:", cleanFinal);
+
+            // Chime for wake word
+            if (/자비스|jarvis|자비/i.test(cleanFinal)) {
+              playChime();
+            }
+
+            // Send clean text turn to Jarvis backend
+            if (ws && ws.readyState === WebSocket.OPEN) {
+              ws.send(JSON.stringify({
+                type: "text_input",
+                source: "voice",
+                text: cleanFinal
+              }));
+            }
+          }
+        };
+
+        recognition.onerror = (event) => {
+          console.warn("SpeechRecognition error:", event.error);
+          if (event.error === "not-allowed" || event.error === "service-not-allowed") {
+            isSpeechRecognitionActive = false;
+            appendMessage("system", "⚠️ 브라우저 마이크/음성 인식 권한이 제한되었습니다. 주소창 좌측 설정에서 마이크를 허용해 주십시오.");
+          }
+        };
+
+        recognition.onend = () => {
+          isSpeechRecognitionActive = false;
+          interimUserCard = null;
+          interimUserBubble = null;
+
+          // Automatically restart if session is still live and Jarvis is not speaking
+          if (isConnected && !isMicMuted && !isJarvisSpeaking) {
+            try {
+              recognition.start();
+            } catch (e) {}
+          }
+        };
+      } catch (err) {
+        console.warn("SpeechRecognition init exception:", err);
+        isSpeechRecognitionSupported = false;
+      }
+    }
+
+    function startSpeechRecognition() {
+      if (!recognition || !isSpeechRecognitionSupported) return;
+      if (isSpeechRecognitionActive || isJarvisSpeaking || isMicMuted) return;
+      try {
+        recognition.start();
+      } catch (e) {}
+    }
+
+    function stopSpeechRecognition() {
+      if (!recognition) return;
+      isSpeechRecognitionActive = false;
+      try {
+        recognition.stop();
+      } catch (e) {}
+    }
+
     // Initialize AudioContext & Microphone
     async function initAudioEngine() {
       if (!audioCtx) {
@@ -1421,7 +1563,7 @@
         micSourceNode = audioCtx.createMediaStreamSource(micStream);
         micSourceNode.connect(analyserNode);
 
-        // ScriptProcessorNode for Raw 16kHz PCM Capture
+        // ScriptProcessorNode for Raw 16kHz PCM Capture (Fallback & audio graph keeping)
         const bufferSize = 4096;
         micProcessorNode = audioCtx.createScriptProcessor(bufferSize, 1, 1);
 
@@ -1430,7 +1572,12 @@
           const output = e.outputBuffer.getChannelData(0);
           output.fill(0);
 
-          if (!isConnected || isMicMuted || !ws || ws.readyState !== WebSocket.OPEN) {
+          // If Web Speech API is actively handling STT, do not send duplicate raw PCM audio
+          if (isSpeechRecognitionActive) {
+            return;
+          }
+
+          if (!isConnected || isMicMuted || isJarvisSpeaking || !ws || ws.readyState !== WebSocket.OPEN) {
             return;
           }
 
@@ -1443,12 +1590,13 @@
           }
         };
 
-        // Connect micProcessor through a zero-gain node to prevent local feedback/screeching
-        const zeroGain = audioCtx.createGain();
-        zeroGain.gain.value = 0;
+        // Connect micProcessor through a minimal non-zero gain node to keep the processor node
+        // active in Chrome without leaking sound to destination
+        micKeepAliveGain = audioCtx.createGain();
+        micKeepAliveGain.gain.value = 0.0001;
         micSourceNode.connect(micProcessorNode);
-        micProcessorNode.connect(zeroGain);
-        zeroGain.connect(audioCtx.destination);
+        micProcessorNode.connect(micKeepAliveGain);
+        micKeepAliveGain.connect(audioCtx.destination);
       } catch (err) {
         console.warn("Microphone access failed or denied:", err);
         appendMessage("system", "⚠️ 마이크 권한이 허용되지 않았습니다. 하단 텍스트 입력창으로 타이핑하여 대화하실 수 있습니다.");
@@ -1586,6 +1734,7 @@
 
       isConnected = false;
       nextPlayTime = 0;
+      stopSpeechRecognition();
 
       if (heartbeatTimer) {
         clearInterval(heartbeatTimer);
@@ -1602,6 +1751,19 @@
         micStream = null;
       }
 
+      if (micProcessorNode) {
+        try { micProcessorNode.disconnect(); } catch (e) {}
+        micProcessorNode = null;
+      }
+      if (micSourceNode) {
+        try { micSourceNode.disconnect(); } catch (e) {}
+        micSourceNode = null;
+      }
+      if (micKeepAliveGain) {
+        try { micKeepAliveGain.disconnect(); } catch (e) {}
+        micKeepAliveGain = null;
+      }
+
       setUIState("offline");
       appendMessage("system", "🔒 자비스 시스템이 오프라인 상태로 전환되었습니다.");
     }
@@ -1614,7 +1776,8 @@
             setUIState("online");
             if (msg.model) modelLabel.textContent = msg.model;
             if (msg.voice) voiceLabel.textContent = msg.voice.toUpperCase();
-            appendMessage("system", "✨ <strong>J.A.R.V.I.S. 온라인 연결 완료.</strong> 말씀하시거나 아래 입력창에 타이핑해 주세요, Sir.");
+            startSpeechRecognition();
+            appendMessage("system", "✨ <strong>J.A.R.V.I.S. 온라인 연결 완료.</strong> 마이크로 말씀하시거나 아래 입력창에 타이핑해 주세요, Sir.");
           }
           break;
 
@@ -1622,7 +1785,9 @@
           if (msg.wake_word) {
             playChime();
           }
-          appendMessage("user", msg.text, "VOICE");
+          if (!lastSpokenUserText || !lastSpokenUserText.includes(msg.text.trim())) {
+            appendMessage("user", msg.text, "VOICE");
+          }
           // Reset Jarvis current bubble for next reply
           currentJarvisCard = null;
           currentJarvisBubble = null;
@@ -1631,6 +1796,9 @@
         case "speaking_state":
           isJarvisSpeaking = msg.is_speaking;
           updateSpeakingVisuals(isJarvisSpeaking);
+          if (isJarvisSpeaking) {
+            stopSpeechRecognition();
+          }
           break;
 
         case "jarvis_transcription":
@@ -1641,6 +1809,12 @@
           isJarvisSpeaking = false;
           updateSpeakingVisuals(false);
           finalizeJarvisResponse();
+          // Resume speech recognition with brief pause to avoid picking up speaker echo
+          setTimeout(() => {
+            if (isConnected && !isMicMuted && !isJarvisSpeaking) {
+              startSpeechRecognition();
+            }
+          }, 350);
           break;
 
         case "tool_call": {
@@ -1794,6 +1968,7 @@
       if (ws && ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify({
           type: "text_input",
+          source: "typed",
           text: text
         }));
       }
@@ -2003,10 +2178,14 @@
     micToggleBtn.addEventListener("click", () => {
       isMicMuted = !isMicMuted;
       if (isMicMuted) {
+        stopSpeechRecognition();
         micToggleBtn.innerHTML = "<span>🎙️ 마이크: 음소거</span>";
         micToggleBtn.classList.remove("active");
         micToggleBtn.classList.add("danger");
       } else {
+        if (isConnected && !isJarvisSpeaking) {
+          startSpeechRecognition();
+        }
         micToggleBtn.innerHTML = "<span>🎙️ 마이크: 켜짐</span>";
         micToggleBtn.classList.add("active");
         micToggleBtn.classList.remove("danger");
@@ -2032,6 +2211,9 @@
     powerBtn.addEventListener("click", () => {
       disconnectJarvis();
     });
+
+    // Initialize Speech Recognition on page load
+    initSpeechRecognition();
   </script>
 </body>
 </html>

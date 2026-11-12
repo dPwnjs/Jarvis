@@ -487,11 +487,13 @@ async def handle_browser_to_gemini(
 
                 msg_type = data.get("type")
 
-                # Typed user question
+                # User question (voice transcription or typed text)
                 if msg_type == "text_input":
                     text = data.get("text", "").strip()
+                    source = data.get("source", "typed")
                     if text:
-                        print(f"⌨️ [웹 입력]: {text}")
+                        icon = "🎙️ [웹 음성 인식]" if source == "voice" else "⌨️ [웹 텍스트 입력]"
+                        print(f"{icon}: {text}")
                         try:
                             await session.send_client_content(
                                 turns=types.Content(
@@ -501,7 +503,7 @@ async def handle_browser_to_gemini(
                                 turn_complete=True,
                             )
                         except Exception as e:
-                            print(f"[텍스트 전송 오류]: {e}")
+                            print(f"[입력 전송 오류]: {e}")
 
                 # Ping / Heartbeat
                 elif msg_type == "ping":
@@ -587,9 +589,6 @@ async def websocket_handler(websocket):
                     voice_name=JARVIS_VOICE
                 )
             )
-        ),
-        realtime_input_config=types.RealtimeInputConfig(
-            activity_handling=types.ActivityHandling.NO_INTERRUPTION
         ),
         input_audio_transcription=types.AudioTranscriptionConfig(),
         output_audio_transcription=types.AudioTranscriptionConfig(),

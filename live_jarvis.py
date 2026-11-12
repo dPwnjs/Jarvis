@@ -309,9 +309,6 @@ async def run_jarvis():
                 )
             )
         ),
-        realtime_input_config=types.RealtimeInputConfig(
-            activity_handling=types.ActivityHandling.NO_INTERRUPTION
-        ),
         input_audio_transcription=types.AudioTranscriptionConfig(),
         output_audio_transcription=types.AudioTranscriptionConfig(),
         tools=JARVIS_TOOLS,
