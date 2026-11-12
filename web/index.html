@@ -334,30 +334,30 @@
     }
 
     /* Diagnostics & Quick Actions */
-    .controls-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
+    .controls-action-bar {
+      display: flex;
+      justify-content: center;
       width: 100%;
-      margin-top: 24px;
+      margin-top: 22px;
     }
 
     .btn-action {
       background: rgba(0, 240, 255, 0.08);
       border: 1px solid var(--border-cyan);
-      border-radius: 6px;
+      border-radius: 20px;
       color: var(--text-main);
       font-family: var(--font-hud);
       font-size: 11px;
       font-weight: 600;
       letter-spacing: 1.5px;
-      padding: 12px 14px;
+      padding: 10px 20px;
       cursor: pointer;
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 8px;
       transition: all 0.25s ease;
+      backdrop-filter: blur(8px);
     }
 
     .btn-action:hover {
@@ -1000,14 +1000,13 @@
         padding: 0 8px;
       }
 
-      .controls-grid {
-        grid-template-columns: 1fr 1fr;
-        gap: 8px;
+      .controls-action-bar {
         width: 100%;
+        margin-top: 16px;
       }
 
       .btn-action {
-        padding: 10px 8px;
+        padding: 10px 16px;
         font-size: 11px;
       }
 
@@ -1095,9 +1094,6 @@
         <span>VOICE:</span>
         <span id="voiceLabel" style="color: var(--gold-accent);">PUCK</span>
       </div>
-      <button class="metric-badge btn-mobile-sync" id="apiKeyBtn" title="Gemini API 키 설정">
-        <span>🔑 API 키</span>
-      </button>
       <button class="metric-badge btn-mobile-sync" id="mobileModalBtn" title="스마트폰 연결 및 QR 코드">
         <span>📱 모바일 연동</span>
       </button>
@@ -1127,19 +1123,10 @@
         연결 즉시 마이크와 키보드로 자유롭게 대화할 수 있습니다.
       </div>
 
-      <!-- Quick Control Action Buttons -->
-      <div class="controls-grid">
-        <button class="btn-action active" id="micToggleBtn">
-          <span>🎙️ 마이크: 켜짐</span>
-        </button>
-        <button class="btn-action" id="audioMuteBtn">
-          <span>🔊 스피커: 정상</span>
-        </button>
-        <button class="btn-action" id="clearChatBtn">
-          <span>🧹 대화 정리</span>
-        </button>
-        <button class="btn-action danger" id="powerBtn">
-          <span>⚡ 시스템 종료</span>
+      <!-- Quick Control Action Bar -->
+      <div class="controls-action-bar">
+        <button class="btn-action active" id="micToggleBtn" title="클릭하여 마이크 음소거 / 활성화">
+          <span>🎙️ 마이크: 상시 감지 중</span>
         </button>
       </div>
     </section>
@@ -1288,7 +1275,6 @@
     }
 
     // DOM Elements
-    const apiKeyBtn = document.getElementById("apiKeyBtn");
     const reactorBtn = document.getElementById("reactorBtn");
     const arcReactor = document.getElementById("arcReactor");
     const reactorCore = document.getElementById("reactorCore");
@@ -1300,9 +1286,6 @@
     const modelLabel = document.getElementById("modelLabel");
     const voiceLabel = document.getElementById("voiceLabel");
     const micToggleBtn = document.getElementById("micToggleBtn");
-    const audioMuteBtn = document.getElementById("audioMuteBtn");
-    const clearChatBtn = document.getElementById("clearChatBtn");
-    const powerBtn = document.getElementById("powerBtn");
     const messagesContainer = document.getElementById("messagesContainer");
     const textInput = document.getElementById("textInput");
     const sendBtn = document.getElementById("sendBtn");
@@ -2149,10 +2132,6 @@
       }
     }
 
-    if (apiKeyBtn) {
-      apiKeyBtn.addEventListener("click", promptApiKey);
-    }
-
     // Event Listeners
     function toggleJarvis(e) {
       if (e && e.type === "touchend") {
@@ -2179,37 +2158,17 @@
       isMicMuted = !isMicMuted;
       if (isMicMuted) {
         stopSpeechRecognition();
-        micToggleBtn.innerHTML = "<span>🎙️ 마이크: 음소거</span>";
+        micToggleBtn.innerHTML = "<span>🎙️ 마이크: 음소거됨 (클릭하여 켜기)</span>";
         micToggleBtn.classList.remove("active");
         micToggleBtn.classList.add("danger");
       } else {
         if (isConnected && !isJarvisSpeaking) {
           startSpeechRecognition();
         }
-        micToggleBtn.innerHTML = "<span>🎙️ 마이크: 켜짐</span>";
+        micToggleBtn.innerHTML = "<span>🎙️ 마이크: 상시 감지 중</span>";
         micToggleBtn.classList.add("active");
         micToggleBtn.classList.remove("danger");
       }
-    });
-
-    audioMuteBtn.addEventListener("click", () => {
-      isAudioMuted = !isAudioMuted;
-      if (isAudioMuted) {
-        audioMuteBtn.innerHTML = "<span>🔇 스피커: 음소거</span>";
-        audioMuteBtn.classList.add("danger");
-      } else {
-        audioMuteBtn.innerHTML = "<span>🔊 스피커: 정상</span>";
-        audioMuteBtn.classList.remove("danger");
-      }
-    });
-
-    clearChatBtn.addEventListener("click", () => {
-      messagesContainer.innerHTML = "";
-      appendMessage("system", "🧹 대화 로그가 초기화되었습니다.");
-    });
-
-    powerBtn.addEventListener("click", () => {
-      disconnectJarvis();
     });
 
     // Initialize Speech Recognition on page load
