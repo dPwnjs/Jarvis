@@ -1094,8 +1094,8 @@
         <span>VOICE:</span>
         <span id="voiceLabel" style="color: var(--gold-accent);">PUCK</span>
       </div>
-      <button class="metric-badge btn-mobile-sync" id="mobileModalBtn" title="스마트폰 연결 및 QR 코드">
-        <span>📱 모바일 연동</span>
+      <button class="metric-badge btn-mobile-sync" id="mobileModalBtn" title="Connect Smartphone via QR Code">
+        <span>📱 MOBILE SYNC</span>
       </button>
     </div>
   </header>
@@ -1104,7 +1104,7 @@
   <main>
     <!-- Left: Arc Reactor Centerpiece -->
     <section class="reactor-panel">
-      <div class="reactor-container" id="reactorBtn" title="클릭하여 자비스 활성화 / 비활성화">
+      <div class="reactor-container" id="reactorBtn" title="Click to Toggle J.A.R.V.I.S.">
         <canvas id="visualizerCanvas" width="320" height="320"></canvas>
         <div class="reactor-ring-outer"></div>
         <div class="reactor-ring-inner"></div>
@@ -1119,14 +1119,14 @@
         CORE OFFLINE
       </div>
       <div class="reactor-subtext" id="reactorSubtext">
-        아크 리액터를 클릭하여 자비스 음성 비서를 연결하십시오.<br>
-        연결 즉시 마이크와 키보드로 자유롭게 대화할 수 있습니다.
+        Click the Arc Reactor to initialize J.A.R.V.I.S. neural link.<br>
+        Voice and keyboard channels will activate immediately.
       </div>
 
       <!-- Quick Control Action Bar -->
       <div class="controls-action-bar">
-        <button class="btn-action active" id="micToggleBtn" title="클릭하여 마이크 음소거 / 활성화">
-          <span>🎙️ 마이크: 상시 감지 중</span>
+        <button class="btn-action active" id="micToggleBtn" title="Click to Mute / Unmute Microphone">
+          <span>🎙️ MIC: ACTIVE</span>
         </button>
       </div>
     </section>
@@ -1142,8 +1142,8 @@
         <!-- Initial Welcome Message -->
         <div class="msg-card system">
           <div class="msg-bubble system">
-            🚀 <strong>J.A.R.V.I.S. 온라인 준비 완료</strong><br>
-            아크 리액터를 누르면 마이크가 켜지고 음성 & 텍스트 동시 대화가 활성화됩니다.
+            🚀 <strong>J.A.R.V.I.S. ONLINE // READY</strong><br>
+            Tap the Arc Reactor to initialize the neural link. Voice and keyboard input channels ready.
           </div>
         </div>
       </div>
@@ -1154,7 +1154,7 @@
             type="text"
             class="input-field"
             id="textInput"
-            placeholder="자비스에게 명령하거나 질문을 입력하세요... (Enter 키로 전송)"
+            placeholder="Command J.A.R.V.I.S. or enter query... (Press Enter to send)"
             autocomplete="off"
           />
         </div>
@@ -1173,17 +1173,17 @@
           <span class="modal-glow-dot"></span>
           <span>STARK MOBILE SYNC // NEURAL LINK</span>
         </div>
-        <button class="modal-close-btn" id="closeMobileModalBtn" title="닫기">✕</button>
+        <button class="modal-close-btn" id="closeMobileModalBtn" title="Close">✕</button>
       </div>
 
       <div class="modal-body">
         <!-- Connection Mode Tabs -->
         <div class="sync-tabs">
           <button class="sync-tab active" id="tabPublic" type="button">
-            🌐 외부 인터넷 (LTE / 5G / 카페)
+            🌐 Remote / Cellular (LTE / 5G)
           </button>
           <button class="sync-tab" id="tabLocal" type="button">
-            🏠 동일 Wi-Fi (로컬)
+            🏠 Local Network (Same Wi-Fi)
           </button>
         </div>
 
@@ -1197,10 +1197,10 @@
 
         <div class="mobile-info-section">
           <div class="info-group">
-            <label class="info-label" id="urlLabelText">스마트폰 접속 주소 (HTTPS 보안 연결):</label>
+            <label class="info-label" id="urlLabelText">Mobile Access URL (Secure HTTPS):</label>
             <div class="url-copy-box">
               <input type="text" id="mobileUrlInput" readonly />
-              <button class="btn-copy" id="copyUrlBtn">복사</button>
+              <button class="btn-copy" id="copyUrlBtn">COPY</button>
             </div>
           </div>
 
@@ -1401,7 +1401,7 @@
 
         recognition.onstart = () => {
           isSpeechRecognitionActive = true;
-          console.log("🎙️ [STT] 브라우저 음성 인식 엔진 활성화 (ko-KR)");
+          console.log("🎙️ [STT] Browser Speech Recognition engine active (ko-KR / en-US)");
           if (reactorInstruction && isConnected && !isJarvisSpeaking) {
             reactorInstruction.textContent = "SYSTEM ONLINE // LISTENING (VOICE ACTIVE)";
           }
@@ -1427,7 +1427,7 @@
           // Real-time interim visual feedback on HUD console
           if (interimTranscript.trim()) {
             if (!interimUserBubble) {
-              const res = appendMessage("user", "", "VOICE // 실시간 인식 중");
+              const res = appendMessage("user", "", "VOICE // STREAMING");
               interimUserCard = res.card;
               interimUserBubble = res.bubble;
             }
@@ -1450,7 +1450,7 @@
               appendMessage("user", cleanFinal, "VOICE");
             }
 
-            console.log("🎙️ [음성 인식 완료]:", cleanFinal);
+            console.log("🎙️ [STT Final]:", cleanFinal);
 
             // Chime for wake word
             if (/자비스|jarvis|자비/i.test(cleanFinal)) {
@@ -1472,7 +1472,7 @@
           console.warn("SpeechRecognition error:", event.error);
           if (event.error === "not-allowed" || event.error === "service-not-allowed") {
             isSpeechRecognitionActive = false;
-            appendMessage("system", "⚠️ 브라우저 마이크/음성 인식 권한이 제한되었습니다. 주소창 좌측 설정에서 마이크를 허용해 주십시오.");
+            appendMessage("system", "⚠️ Microphone access restricted. Please allow microphone permissions in browser settings.");
           }
         };
 
@@ -1528,7 +1528,7 @@
       // Check if getUserMedia is supported in current context (HTTP vs HTTPS / localhost)
       if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
         console.warn("navigator.mediaDevices.getUserMedia is unavailable in this context.");
-        appendMessage("system", "📱 <strong>모바일 접속 모드:</strong> 모바일 브라우저의 보안 정책으로 마이크가 제한될 수 있습니다. 하단 텍스트 창으로 질문을 타이핑하시면, 자비스의 <strong>음성 답변은 모바일 스피커로 정상 출력</strong>됩니다.");
+        appendMessage("system", "📱 <strong>MOBILE MODE:</strong> Microphone input may be restricted by mobile security policy. Text commands are fully active, and J.A.R.V.I.S. voice audio will stream to your mobile speaker.");
         return;
       }
 
@@ -1582,7 +1582,7 @@
         micKeepAliveGain.connect(audioCtx.destination);
       } catch (err) {
         console.warn("Microphone access failed or denied:", err);
-        appendMessage("system", "⚠️ 마이크 권한이 허용되지 않았습니다. 하단 텍스트 입력창으로 타이핑하여 대화하실 수 있습니다.");
+        appendMessage("system", "⚠️ Microphone permission not granted. You can type commands in the console below, Sir.");
       }
     }
 
@@ -1668,7 +1668,7 @@
         ws = new WebSocket(wsUrl);
       } catch (err) {
         console.error("WebSocket creation failed:", err);
-        appendMessage("system", "⚠️ 웹소켓 연결을 생성하지 못했습니다. 서버 주소를 확인해 주십시오.");
+        appendMessage("system", "⚠️ Failed to establish WebSocket connection. Please verify server URL.");
         disconnectJarvis();
         return;
       }
@@ -1703,7 +1703,7 @@
 
       ws.onerror = (err) => {
         console.error("WebSocket error:", err);
-        appendMessage("system", "⚠️ 웹소켓 통신 오류가 발생했습니다. 백엔드 서버(web_jarvis.py)가 실행 중인지 확인해 주십시오.");
+        appendMessage("system", "⚠️ WebSocket communication error. Please ensure backend server is operational.");
       };
 
       ws.onclose = () => {
@@ -1748,7 +1748,7 @@
       }
 
       setUIState("offline");
-      appendMessage("system", "🔒 자비스 시스템이 오프라인 상태로 전환되었습니다.");
+      appendMessage("system", "🔒 J.A.R.V.I.S. neural link disconnected // STANDBY.");
     }
 
     // Handle Incoming JSON Messages from Server
@@ -1760,7 +1760,7 @@
             if (msg.model) modelLabel.textContent = msg.model;
             if (msg.voice) voiceLabel.textContent = msg.voice.toUpperCase();
             startSpeechRecognition();
-            appendMessage("system", "✨ <strong>J.A.R.V.I.S. 온라인 연결 완료.</strong> 마이크로 말씀하시거나 아래 입력창에 타이핑해 주세요, Sir.");
+            appendMessage("system", "✨ <strong>J.A.R.V.I.S. ONLINE.</strong> Neural audio link established. Ready for command, Sir.");
           }
           break;
 
@@ -1801,15 +1801,15 @@
           break;
 
         case "tool_call": {
-          const toolNamesKo = {
-            "get_current_datetime": "구글(Google) 공식 타임 서버 연동 실시간 시각 조회",
-            "calculate_math": "수학 공식 및 수치 정밀 연산",
-            "get_weather": "실시간 날씨 및 기온 정보 조회",
-            "search_information": "Gemini 지능망 정보 탐색 및 심층 분석",
-            "request_and_register_capability": "새로운 기능 탑재 승인 및 영구 등록",
-            "get_system_capabilities": "자비스 활성 기능 및 승인 목록 조회"
+          const toolNamesEn = {
+            "get_current_datetime": "Google Time Server KST / Global Sync",
+            "calculate_math": "High-Precision Math & Science Computation",
+            "get_weather": "Real-time Weather & Atmospheric Telemetry",
+            "search_information": "Gemini Live Deep Intelligence Search",
+            "request_and_register_capability": "New Capability Authorization & Registration",
+            "get_system_capabilities": "Active System Capabilities & Telemetry"
           };
-          const title = toolNamesKo[msg.tool_name] || msg.tool_name;
+          const title = toolNamesEn[msg.tool_name] || msg.tool_name;
           let argsHtml = "";
           if (msg.args && Object.keys(msg.args).length > 0) {
             const prettyArgs = Object.entries(msg.args)
@@ -1833,12 +1833,12 @@
         }
 
         case "error":
-          appendMessage("system", `❌ [오류]: ${msg.message}`);
+          appendMessage("system", `❌ [ERROR]: ${msg.message}`);
           if (msg.code === "AUTH_KEY_MISSING" || (msg.message && msg.message.includes("GEMINI_API_KEY"))) {
             setTimeout(() => promptApiKey(), 400);
           } else if (msg.code === "QUOTA_EXCEEDED" || (msg.message && msg.message.includes("quota"))) {
             setTimeout(() => {
-              if (confirm("⚠️ Gemini API 무료 사용량이 소진되었습니다.\n새 구글 프로젝트에서 발급받은 새 API 키를 지금 입력하시겠습니까?")) {
+              if (confirm("⚠️ Gemini API quota exceeded.\nWould you like to enter a new API Key now?")) {
                 promptApiKey();
               }
             }, 600);
@@ -1855,7 +1855,7 @@
         statusLabel.textContent = "ONLINE // READY";
         coreText.innerHTML = "JARVIS<br>ACTIVE";
         reactorInstruction.textContent = "SYSTEM ONLINE // LISTENING";
-        reactorSubtext.textContent = "마이크가 상시 열려 있습니다. 말씀하시거나 타이핑하십시오.";
+        reactorSubtext.textContent = "Microphone active. Speak or type your query, Sir.";
         arcReactor.style.borderColor = "var(--cyan-bright)";
         reactorCore.classList.remove("speaking");
       } else if (state === "connecting") {
@@ -1863,14 +1863,14 @@
         statusLabel.textContent = "INITIALIZING...";
         coreText.innerHTML = "CONNECTING...";
         reactorInstruction.textContent = "ESTABLISHING NEURAL LINK...";
-        reactorSubtext.textContent = "Gemini 2.5 Live 서버에 연결 중입니다. 잠시만 기다려 주십시오...";
+        reactorSubtext.textContent = "Connecting to Gemini 2.5 Live core. Please standby...";
       } else {
         isConnected = false;
         statusDot.className = "status-dot offline";
         statusLabel.textContent = "STANDBY";
         coreText.innerHTML = "CLICK TO<br>INITIALIZE";
         reactorInstruction.textContent = "CORE OFFLINE";
-        reactorSubtext.textContent = "아크 리액터를 클릭하여 자비스를 활성화하십시오.";
+        reactorSubtext.textContent = "Click the Arc Reactor to initialize J.A.R.V.I.S.";
         reactorCore.classList.remove("speaking");
       }
     }
@@ -1988,43 +1988,43 @@
         if (publicUrl) {
           mobileUrlInput.value = publicUrl;
           qrBadgeText.textContent = "SCAN WITH CAMERA // ANYWHERE ACCESS";
-          urlLabelText.textContent = "🌐 인터넷 어디서나 접속 주소 (HTTPS 보안 연결):";
+          urlLabelText.textContent = "🌐 Remote Access URL (Secure HTTPS):";
           qrCodeImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(publicUrl)}&color=00f0ff&bgcolor=081424&margin=10`;
 
           guideSteps.innerHTML = `
             <div class="guide-step">
               <span class="step-num">01</span>
-              <span class="step-text">스마트폰에서 <strong>LTE/5G 데이터</strong> 또는 외부 Wi-Fi로 접속 가능합니다.</span>
+              <span class="step-text">Connect smartphone via <strong>LTE / 5G</strong> or external Wi-Fi.</span>
             </div>
             <div class="guide-step">
               <span class="step-num">02</span>
-              <span class="step-text">카메라로 <strong>QR 코드를 스캔</strong>하거나 위 HTTPS 주소로 이동합니다.</span>
+              <span class="step-text">Scan the <strong>QR code</strong> or navigate to the HTTPS URL above.</span>
             </div>
             <div class="guide-step">
               <span class="step-num">03</span>
-              <span class="step-text">브라우저의 <strong>마이크 권한 '허용'</strong>을 누르면 음성 대화가 즉시 활성화됩니다.</span>
+              <span class="step-text">Tap <strong>'Allow'</strong> for microphone permissions to enable voice interaction.</span>
             </div>
           `;
 
           mobileMicNotice.innerHTML = `
-            <div class="notice-title">🔒 HTTPS 보안 암호화 완벽 지원</div>
+            <div class="notice-title">🔒 ENCRYPTED HTTPS CONNECTION</div>
             <div class="notice-desc">
-              Cloudflare 보안 터널을 통해 <strong>아이폰(Safari) 및 안드로이드(Chrome) 모두 마이크가 기본 허용</strong>됩니다.<br>
-              집 밖, 카페, 이동 중 어디서나 자비스와 자유롭게 대화하세요!
+              Microphone access is enabled for both <strong>iOS (Safari) and Android (Chrome)</strong>.<br>
+              Interact with J.A.R.V.I.S. remotely from anywhere!
             </div>
           `;
         } else {
-          mobileUrlInput.value = "터널 생성 중이거나 로컬 전용 모드입니다.";
+          mobileUrlInput.value = "Tunnel initializing or local-only mode.";
           qrBadgeText.textContent = "LOCAL WI-FI ONLY";
-          urlLabelText.textContent = "외부 인터넷 주소를 확인하는 중입니다:";
+          urlLabelText.textContent = "Verifying remote endpoint:";
           guideSteps.innerHTML = `
             <div class="guide-step">
               <span class="step-num">💡</span>
-              <span class="step-text">외부 터널을 가져오지 못했습니다. 상단의 <strong>[동일 Wi-Fi]</strong> 탭을 클릭하여 접속해 주십시오.</span>
+              <span class="step-text">Remote tunnel unavailable. Please switch to the <strong>[Local Network]</strong> tab.</span>
             </div>
           `;
           mobileMicNotice.innerHTML = `
-            <div class="notice-desc">동일한 Wi-Fi 환경에서는 [동일 Wi-Fi] 탭을 이용하시면 즉시 연결됩니다.</div>
+            <div class="notice-desc">On the same Wi-Fi, select the Local Network tab for instant connection.</div>
           `;
         }
       } else {
@@ -2033,29 +2033,29 @@
 
         mobileUrlInput.value = localUrl;
         qrBadgeText.textContent = "SCAN WITH CAMERA // SAME WI-FI";
-        urlLabelText.textContent = "🏠 모바일 직접 접속 주소 (같은 Wi-Fi):";
+        urlLabelText.textContent = "🏠 Direct Mobile URL (Same Wi-Fi):";
         qrCodeImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(localUrl)}&color=00f0ff&bgcolor=081424&margin=10`;
 
         guideSteps.innerHTML = `
           <div class="guide-step">
             <span class="step-num">01</span>
-            <span class="step-text">스마트폰을 Mac과 <strong>동일한 Wi-Fi 공유기</strong>에 연결합니다.</span>
+            <span class="step-text">Connect smartphone to the <strong>same Wi-Fi router</strong> as this workstation.</span>
           </div>
           <div class="guide-step">
             <span class="step-num">02</span>
-            <span class="step-text">스마트폰 카메라로 <strong>QR 코드를 스캔</strong>하거나 위 주소로 접속합니다.</span>
+            <span class="step-text">Scan the <strong>QR code</strong> or open the URL in your mobile browser.</span>
           </div>
           <div class="guide-step">
             <span class="step-num">03</span>
-            <span class="step-text">중앙의 <strong>아크 리액터</strong>를 터치하여 대화를 시작합니다.</span>
+            <span class="step-text">Tap the central <strong>Arc Reactor</strong> to begin.</span>
           </div>
         `;
 
         mobileMicNotice.innerHTML = `
-          <div class="notice-title">💡 로컬 Wi-Fi 마이크 안내</div>
+          <div class="notice-title">💡 Local Wi-Fi Audio Policy</div>
           <div class="notice-desc">
-            • <strong>타이핑 및 스피커 듣기:</strong> 별도 설정 없이 즉시 100% 작동합니다.<br>
-            • 마이크 음성 입력까지 원하시면 <strong>[외부 인터넷]</strong> 탭의 HTTPS 주소를 이용하시는 것을 추천합니다.
+            • <strong>Text commands and audio playback:</strong> 100% active immediately.<br>
+            • For mobile microphone input, the HTTPS URL in the <strong>[Remote]</strong> tab is recommended.
           </div>
         `;
       }
@@ -2090,7 +2090,7 @@
       try {
         await navigator.clipboard.writeText(mobileUrlInput.value);
         const originalText = copyUrlBtn.textContent;
-        copyUrlBtn.textContent = "복사됨! ✓";
+        copyUrlBtn.textContent = "COPIED! ✓";
         copyUrlBtn.style.background = "#00ff88";
         setTimeout(() => {
           copyUrlBtn.textContent = originalText;
@@ -2099,17 +2099,17 @@
       } catch (err) {
         mobileUrlInput.select();
         document.execCommand("copy");
-        copyUrlBtn.textContent = "복사됨! ✓";
-        setTimeout(() => { copyUrlBtn.textContent = "복사"; }, 2000);
+        copyUrlBtn.textContent = "COPIED! ✓";
+        setTimeout(() => { copyUrlBtn.textContent = "COPY"; }, 2000);
       }
     });
 
     // Gemini API Key Management
     function promptApiKey() {
       const currentKey = localStorage.getItem("jarvis_api_key") || "";
-      const masked = currentKey ? currentKey.substring(0, 6) + "..." + currentKey.slice(-4) : "기본 시스템 키 탑재됨 (입력 불필요)";
+      const masked = currentKey ? currentKey.substring(0, 6) + "..." + currentKey.slice(-4) : "Default Server Key Loaded";
       const input = prompt(
-        `🔑 Google AI Studio Gemini API 키 관리\n(현재 등록 상태: ${masked})\n\n💡 기본 시스템 API 키가 서버에 영구 탑재되어 있어 별도 입력 없이도 즉시 작동합니다.\n새로운 개인 키로 교체하거나 갱신하실 경우에만 입력해 주십시오:`,
+        `🔑 Google AI Studio Gemini API Key Management\n(Status: ${masked})\n\n💡 Default system API key is embedded on the server and works automatically.\nEnter a custom Gemini API key only if you wish to override:`,
         currentKey
       );
       if (input !== null) {
@@ -2121,13 +2121,13 @@
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ api_key: trimmed })
           }).catch(() => {});
-          appendMessage("system", "🔑 <strong>Gemini API 키가 안전하게 저장되었습니다.</strong> 아크 리액터를 클릭하거나 타이핑하여 대화를 시작하십시오.");
+          appendMessage("system", "🔑 <strong>Gemini API key saved securely.</strong> Click Arc Reactor or type to begin.");
           if (!isConnected) {
             connectJarvis();
           }
         } else {
           localStorage.removeItem("jarvis_api_key");
-          appendMessage("system", "ℹ️ API 키가 브라우저에서 제거되었습니다.");
+          appendMessage("system", "ℹ️ Custom API key cleared from browser.");
         }
       }
     }
@@ -2158,14 +2158,14 @@
       isMicMuted = !isMicMuted;
       if (isMicMuted) {
         stopSpeechRecognition();
-        micToggleBtn.innerHTML = "<span>🎙️ 마이크: 음소거됨 (클릭하여 켜기)</span>";
+        micToggleBtn.innerHTML = "<span>🎙️ MIC: MUTED (CLICK TO UNMUTE)</span>";
         micToggleBtn.classList.remove("active");
         micToggleBtn.classList.add("danger");
       } else {
         if (isConnected && !isJarvisSpeaking) {
           startSpeechRecognition();
         }
-        micToggleBtn.innerHTML = "<span>🎙️ 마이크: 상시 감지 중</span>";
+        micToggleBtn.innerHTML = "<span>🎙️ MIC: ACTIVE</span>";
         micToggleBtn.classList.add("active");
         micToggleBtn.classList.remove("danger");
       }
