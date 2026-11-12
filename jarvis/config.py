@@ -1,10 +1,14 @@
 import os
+import base64
 from dotenv import load_dotenv
 
 load_dotenv()
 
+# Built-in Default Key (Used automatically on web/cloud if no custom key is provided)
+_DEFAULT_KEY = base64.b64decode("QVEuQWI4Uk42SmtiQjRTd19QbWppMUJWazF3SkxUQm9CYnhJY1RlemE4RmVQYXU3aUN3OHc=").decode("utf-8")
+
 # API Key & Model
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY", "")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY") or _DEFAULT_KEY
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash-native-audio-latest")
 JARVIS_VOICE = os.getenv("JARVIS_VOICE", "Puck")
 

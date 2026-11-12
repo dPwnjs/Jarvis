@@ -525,7 +525,7 @@ async def websocket_handler(websocket):
     """
     print(f"\n🌐 [웹 클라이언트 접속]: {websocket.remote_address}")
 
-    api_key = os.getenv("GEMINI_API_KEY", GEMINI_API_KEY)
+    api_key = os.getenv("GEMINI_API_KEY") or GEMINI_API_KEY
 
     # Check if client provided api_key via query parameter (?api_key=...)
     if not api_key or api_key == "your_gemini_api_key_here":
