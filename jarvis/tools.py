@@ -8,6 +8,10 @@ import datetime
 import json
 import os
 import math
+import urllib.request
+import email.utils
+from zoneinfo import ZoneInfo
+import inspect
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CAPABILITIES_FILE = os.path.join(BASE_DIR, "jarvis", "capabilities.json")
@@ -17,7 +21,7 @@ DEFAULT_CAPABILITIES = {
     "active_tools": [
         {
             "name": "get_current_datetime",
-            "description": "실시간 대한민국(KST) 날짜, 시간, 요일 조회",
+            "description": "구글(Google) 공식 타임 서버와 실시간 연동된 대한민국(KST) 및 전 세계 주요 도시의 정확한 날짜, 시간, 요일 조회",
             "status": "active"
         },
         {
@@ -72,17 +76,111 @@ def save_capabilities(data: dict):
         print(f"[Capabilities] 저장 실패: {e}")
 
 
-def get_current_datetime() -> str:
+TIMEZONE_CITY_MAP = {
+    "서울": "Asia/Seoul",
+    "한국": "Asia/Seoul",
+    "대한민국": "Asia/Seoul",
+    "도쿄": "Asia/Tokyo",
+    "일본": "Asia/Tokyo",
+    "베이징": "Asia/Shanghai",
+    "상하이": "Asia/Shanghai",
+    "중국": "Asia/Shanghai",
+    "뉴욕": "America/New_York",
+    "로스앤젤레스": "America/Los_Angeles",
+    "la": "America/Los_Angeles",
+    "샌프란시스코": "America/Los_Angeles",
+    "워싱턴": "America/New_York",
+    "미국": "America/New_York",
+    "런던": "Europe/London",
+    "영국": "Europe/London",
+    "파리": "Europe/Paris",
+    "프랑스": "Europe/Paris",
+    "베를린": "Europe/Berlin",
+    "독일": "Europe/Berlin",
+    "시드니": "Australia/Sydney",
+    "호주": "Australia/Sydney",
+    "싱가포르": "Asia/Singapore",
+    "방콕": "Asia/Bangkok",
+    "태국": "Asia/Bangkok",
+    "하노이": "Asia/Ho_Chi_Minh",
+    "베트남": "Asia/Ho_Chi_Minh",
+    "모스크바": "Europe/Moscow",
+    "러시아": "Europe/Moscow",
+    "두바이": "Asia/Dubai",
+}
+
+
+def fetch_google_server_time() -> tuple[datetime.datetime, str]:
     """
-    현재의 정확한 대한민국 표준시(KST) 날짜, 시간, 요일을 반환합니다.
-    사용자가 시간이나 날짜를 물어볼 때 환각(추측) 없이 정확한 현재 시각을 제공합니다.
+    구글(Google) 공식 웹 서버 및 공개 타임 서버(https://www.google.com, https://time.google.com)의
+    원자 시계 기준 HTTP Date 헤더를 실시간 동기화하여 정확한 UTC 시간을 반환합니다.
+    연결 지연이나 오프라인 시 고정밀 UTC 시스템 시계로 안전하게 대체합니다.
     """
-    now = datetime.datetime.now()
+    google_endpoints = [
+        "https://www.google.com",
+        "https://time.google.com",
+        "https://www.google.co.kr",
+    ]
+    for url in google_endpoints:
+        try:
+            req = urllib.request.Request(
+                url,
+                headers={"User-Agent": "Mozilla/5.0 (compatible; JarvisGoogleTimeSync/1.0)"}
+            )
+            with urllib.request.urlopen(req, timeout=1.5) as resp:
+                date_hdr = resp.headers.get("Date")
+                if date_hdr:
+                    parsed_dt = email.utils.parsedate_to_datetime(date_hdr)
+                    return parsed_dt.astimezone(datetime.timezone.utc), "Google 공식 타임 서버"
+        except Exception:
+            continue
+
+    return datetime.datetime.now(datetime.timezone.utc), "시스템 고정밀 시계 (KST 기준)"
+
+
+def get_current_datetime(location: str = "대한민국", timezone: str = "Asia/Seoul", **kwargs) -> str:
+    """
+    구글(Google) 공식 타임 서버와 실시간 연동하여 정확한 대한민국 표준시(KST) 및 전 세계 주요 도시의 현재 날짜, 시간, 요일을 반환합니다.
+    시간이나 날짜 관련 질문을 받을 때 환각(추측) 없이 구글 연동의 정확한 실시간 시각을 제공합니다.
+
+    Args:
+        location: 조회할 도시 또는 국가 (기본값: 대한민국)
+        timezone: 타임존 (기본값: Asia/Seoul)
+    """
+    loc_clean = (location or "").strip().lower()
+    target_tz_name = "Asia/Seoul"
+    resolved_loc_name = "대한민국 (서울)"
+
+    if loc_clean:
+        for city_key, tz_val in TIMEZONE_CITY_MAP.items():
+            if city_key in loc_clean:
+                target_tz_name = tz_val
+                resolved_loc_name = location.strip()
+                break
+
+    try:
+        target_tz = ZoneInfo(target_tz_name)
+    except Exception:
+        target_tz = datetime.timezone(datetime.timedelta(hours=9))
+
+    utc_now, source_name = fetch_google_server_time()
+    local_now = utc_now.astimezone(target_tz)
+
     days_ko = ["월요일", "화요일", "수요일", "목요일", "금요일", "토요일", "일요일"]
-    day_str = days_ko[now.weekday()]
-    res = now.strftime(f"%Y년 %m월 %d일 {day_str} %H시 %M분 %S초")
-    print(f"⚡ [도구 실행 - get_current_datetime]: {res}")
-    return res
+    day_str = days_ko[local_now.weekday()]
+    ampm = "오전" if local_now.hour < 12 else "오후"
+    hour_12 = local_now.hour if local_now.hour <= 12 else local_now.hour - 12
+    if hour_12 == 0:
+        hour_12 = 12
+
+    result = (
+        f"[{source_name} 연동] {resolved_loc_name} 기준 현재 시각은 "
+        f"{local_now.year}년 {local_now.month}월 {local_now.day}일 {day_str} "
+        f"{ampm} {hour_12}시 {local_now.minute}분 {local_now.second}초"
+        f" (24시간제: {local_now.strftime('%H:%M:%S')}) 입니다."
+    )
+    print(f"⚡ [도구 실행 - get_current_datetime]: {result}")
+    return result
 
 
 def calculate_math(expression: str) -> str:
@@ -289,11 +387,20 @@ def execute_tool(name: str, args: dict) -> dict:
     """
     지정된 도구를 실행하고 결과를 딕셔너리로 반환합니다.
     Gemini Live API의 FunctionResponse에 담겨 모델에게 전달됩니다.
+    모델이 예상치 못한 부가 인자(예: query, extra)를 넘겨도 함수 시그니처에 맞춰 안전하게 필터링합니다.
     """
     if name in TOOL_MAP:
         try:
             fn = TOOL_MAP[name]
-            result = fn(**args)
+            sig = inspect.signature(fn)
+            has_var_keyword = any(
+                p.kind == inspect.Parameter.VAR_KEYWORD for p in sig.parameters.values()
+            )
+            if has_var_keyword:
+                call_args = args
+            else:
+                call_args = {k: v for k, v in args.items() if k in sig.parameters}
+            result = fn(**call_args)
             return {"result": str(result)}
         except Exception as e:
             err_msg = f"도구 실행 중 오류가 발생했습니다: {str(e)}"

@@ -2,7 +2,7 @@
   "active_tools": [
     {
       "name": "get_current_datetime",
-      "description": "실시간 대한민국(KST) 날짜, 시간, 요일 조회",
+      "description": "구글(Google) 공식 타임 서버와 실시간 연동된 대한민국(KST) 및 전 세계 주요 도시의 정확한 날짜, 시간, 요일 조회",
       "status": "active"
     },
     {
